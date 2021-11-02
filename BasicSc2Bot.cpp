@@ -98,6 +98,11 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
             unit_to_build = unit;
         }
     }
+       
+    // if no  unit assigned return false (prevents reading nullptr exception)
+    if (!unit_to_build) {
+        return false;
+    }
 
     float rx = GetRandomScalar();
     float ry = GetRandomScalar();
