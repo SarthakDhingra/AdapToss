@@ -54,13 +54,36 @@ bool BasicSc2Bot::TryBuildCyber()
 
 bool BasicSc2Bot::TryBuildFirstGateway()
 {
+	if (observation->)
 	return false;
 }
 
 bool BasicSc2Bot::TryBuildCliffPylon()
 {
+	const ObservationInterface* observation = Observation();
+
+	// builds our first pylon at 14 supply.
+	if (observation->GetFoodCap() < 16 && observation->GetFoodUsed > 13)
+	{
+		return TryBuildStructure(ABILITY_ID::BUILD_PYLON);
+	}
 	return false;
 }
+
+
+bool BasicSc2Bot::TryBuildSupplyDepot() {
+	const ObservationInterface* observation = Observation();
+
+	// If we are not supply capped, don't build a supply depot.
+	if (observation->GetFoodUsed() <= observation->GetFoodCap() - 2)
+		return false;
+
+	// Try and build a depot. Find a random SCV and give it the order.
+	return TryBuildStructure(ABILITY_ID::BUILD_SUPPLYDEPOT);
+
+}
+
+
 
 bool BasicSc2Bot::InBasicOpener(int food_used) const
 {
