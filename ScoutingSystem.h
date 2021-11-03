@@ -17,7 +17,6 @@ private:
 	ActionInterface* actions = nullptr;
 	
 	const Unit* scout = nullptr;
-	//UNIT_TYPEID scout_type = UNIT_TYPEID::PROTOSS_PROBE;
-	UNIT_TYPEID scout_type = UNIT_TYPEID::TERRAN_SCV;
+	UNIT_TYPEID scout_type = UNIT_TYPEID::PROTOSS_PROBE;
 };
 
