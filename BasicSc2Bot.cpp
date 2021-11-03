@@ -101,6 +101,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
        
     // if no  unit assigned return false (prevents reading nullptr exception)
     if (!unit_to_build) {
+        // testing 123
         return false;
     }
 
