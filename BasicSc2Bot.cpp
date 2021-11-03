@@ -6,7 +6,7 @@
 using namespace sc2;
 
 void BasicSc2Bot::OnGameStart() {
-	scouting_system.Initialize(Observation(), Actions());
+	scouting_system.Init(Observation(), Actions());
 
 	return;
 }

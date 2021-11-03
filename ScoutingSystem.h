@@ -6,11 +6,15 @@ using namespace sc2;
 
 class ScoutingSystem {
 public:
-	void Initialize(const ObservationInterface* obs, ActionInterface* act);
+	void Init(const ObservationInterface* obs, ActionInterface* act);
+	void InitScoutingData();
+	
 	void ScoutingStep();
 
 	void SetScout();
 	void SendScout();
+	void ScoutEarlyRush();
+	void ScoutDetection();
 
 private:
 	const ObservationInterface* observation = nullptr;
@@ -18,5 +22,14 @@ private:
 	
 	const Unit* scout = nullptr;
 	UNIT_TYPEID scout_type = UNIT_TYPEID::PROTOSS_PROBE;
+	Race enemy_race;
+
+	int early_game_supply;
+
+	// keep track of data that's meaningful for adjusting our strategy
+	std::map<std::string, bool> scouting_data;
+
+	// keep track of what the supply threshold is for some early decisions
+	std::map<std::string, size_t> early_scouting_thresholds;
 };
 
