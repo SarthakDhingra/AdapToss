@@ -26,10 +26,10 @@ private:
 
 	int early_game_supply;
 
-	// keep track of data that's meaningful for adjusting our strategy
+	// Keep track of data that's meaningful for adjusting our strategy
 	std::map<std::string, bool> scouting_data;
 
-	// keep track of what the supply threshold is for some early decisions
+	// Keep track of what the supply threshold is for some early decisions
 	std::map<std::string, size_t> early_scouting_thresholds;
 };
 

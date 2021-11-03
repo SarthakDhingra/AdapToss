@@ -77,7 +77,6 @@ void ScoutingSystem::SendScout() {
 	// If no gateways + warpgates, and enemy isn't zerg, don't scout yet
 	if (num_gateways + num_warpgates == 0) {
 		if (enemy_race != Race::Zerg) {
-			std::cout << "error" << std::endl;
 			return;
 		}
 	}
@@ -95,7 +94,7 @@ void ScoutingSystem::ScoutEarlyRush() {
 	if (enemy_race == Race::Zerg) {
 		num_gas = observation->GetUnits(Unit::Alliance::Enemy, IsUnit(UNIT_TYPEID::ZERG_EXTRACTOR)).size();
 		
-		// check for early spawn pool
+		// Check for early spawn pool
 		int num_pools = observation->GetUnits(Unit::Alliance::Enemy, IsUnit(UNIT_TYPEID::ZERG_SPAWNINGPOOL)).size();
 		
 		if (num_pools > 0 && supply < early_scouting_thresholds["spawning_pool"]) {
@@ -105,7 +104,7 @@ void ScoutingSystem::ScoutEarlyRush() {
 	else if (enemy_race == Race::Terran) {
 		num_gas = observation->GetUnits(Unit::Alliance::Enemy, IsUnit(UNIT_TYPEID::TERRAN_REFINERY)).size();
 		
-		// check for low barracks
+		// Check for low barracks
 		int num_barracks = observation->GetUnits(Unit::Alliance::Enemy, IsUnit(UNIT_TYPEID::TERRAN_BARRACKS)).size();
 
 		if (num_barracks < 3 && supply > early_scouting_thresholds["barracks"]) {
@@ -115,7 +114,7 @@ void ScoutingSystem::ScoutEarlyRush() {
 	else {
 		num_gas = observation->GetUnits(Unit::Alliance::Enemy, IsUnit(UNIT_TYPEID::PROTOSS_ASSIMILATOR)).size();
 		
-		// check for early forge
+		// Check for early forge
 		int num_forges = observation->GetUnits(Unit::Alliance::Enemy, IsUnit(UNIT_TYPEID::PROTOSS_FORGE)).size();
 
 		if (num_forges > 0 && supply < early_scouting_thresholds["forge"]) {
@@ -123,7 +122,7 @@ void ScoutingSystem::ScoutEarlyRush() {
 		}
 	}
 
-	// General case
+	// Check for early gas
 	if (num_gas > 2 && supply < early_scouting_thresholds["gas"]) {
 		scouting_data["early_rush"] = true;
 	}
