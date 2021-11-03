@@ -1,9 +1,13 @@
-#include "BasicSc2Bot.h"
 #include <iostream>
 #include <sc2api/sc2_unit_filters.h>
+
+#include "BasicSc2Bot.h"
+
 using namespace sc2;
 
 void BasicSc2Bot::OnGameStart() {
+	scouting_system.Init(Observation(), Actions());
+
 	return;
 }
 
@@ -11,6 +15,7 @@ void BasicSc2Bot::OnStep() {
 	//TryBuildSupplyDepot();
 	//TryBuildBarracks();
 
+	scouting_system.ScoutingStep();
 
 	// If we have less than 24 supply used, do opener things.
 	int food_used = Observation()->GetFoodUsed();
