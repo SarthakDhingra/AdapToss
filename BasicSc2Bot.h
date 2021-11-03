@@ -16,16 +16,14 @@ public:
 	virtual void OnStep() final;
 	virtual void OnUnitIdle(const Unit* unit) final;
 	bool TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type = UNIT_TYPEID::PROTOSS_PROBE);
-	bool TryBuildSupplyDepot();
+	bool TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type, UNIT_TYPEID structure_type);
 	const Unit* FindNearestMineralPatch(const Point2D& start);
 	size_t CountUnitType(UNIT_TYPEID unit_type);
-	bool TryBuildBarracks();
 	bool InBasicOpener(int food_used) const;
 
 
 
 	// early game functions
-	bool TryBuildAdept();
 	bool TryBuildWallPylon();
 	bool TryBuildGeyser();
 	bool TryBuildExpo();
