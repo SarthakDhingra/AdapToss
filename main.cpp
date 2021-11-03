@@ -6,8 +6,8 @@
 
 #include "BasicSc2Bot.h"
 #include "LadderInterface.h"
-using namespace sc2;
 
+using namespace sc2;
 
 // LadderInterface allows the bot to be tested against the built-in AI or
 // played against other bots

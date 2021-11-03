@@ -1,16 +1,22 @@
-#include "BasicSc2Bot.h"
 #include <iostream>
 #include <sc2api/sc2_unit_filters.h>
+
+#include "BasicSc2Bot.h"
+
 using namespace sc2;
 
 void BasicSc2Bot::OnGameStart() {
-    std::cout << "Hello, World!" << std::endl;
+    scouting_system.Initialize(Observation(), Actions());
+
     return;
 }
 
 void BasicSc2Bot::OnStep() {
     TryBuildSupplyDepot();
     TryBuildBarracks();
+
+    scouting_system.ScoutingStep();
+
     return;
 }
 
