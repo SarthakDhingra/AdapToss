@@ -67,4 +67,12 @@ For example,
 ./BasicSc2Bot.exe -a zerg -d Hard -m BelShirVestigeLE.SC2Map
 ```
 
-will result in the bot playing against the zerg built-in AI on hard difficulty on the map CactusValleyLE.
+will result in the bot playing against the zerg built-in AI on hard difficulty on the map CactusValleyLE. 
+
+For Mac,
+
+```
+./BasicSc2Bot -a zerg -d Hard -m CactusValleyLE.SC2Map
+./BasicSc2Bot -a zerg -d Hard -m ProximaStationLE.SC2Map
+./BasicSc2Bot -a zerg -d Hard -m BelShirVestigeLE.SC2Map
+```
