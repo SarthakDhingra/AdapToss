@@ -4,14 +4,71 @@
 using namespace sc2;
 
 void BasicSc2Bot::OnGameStart() {
-    std::cout << "Hello, World!" << std::endl;
     return;
 }
 
 void BasicSc2Bot::OnStep() {
-    TryBuildSupplyDepot();
-    TryBuildBarracks();
+    //TryBuildSupplyDepot();
+    //TryBuildBarracks();
+
+
+	// If we have less than 24 supply used, do opener things.
+	int food_used = Observation()->GetFoodUsed();
+	if (InBasicOpener(food_used))
+	{
+		TryBuildAdept();
+		TryBuildWallPylon();
+		TryBuildGeyser();
+		TryBuildExpo();
+		TryBuildCyber();
+		TryBuildFirstGateway();
+		TryBuildCliffPylon();
+	}
     return;
+}
+
+bool BasicSc2Bot::TryBuildAdept()
+{
+	return false;
+}
+
+bool BasicSc2Bot::TryBuildWallPylon()
+{
+	return false;
+}
+
+bool BasicSc2Bot::TryBuildGeyser()
+{
+	return false;
+}
+
+bool BasicSc2Bot::TryBuildExpo()
+{
+	return false;
+}
+
+bool BasicSc2Bot::TryBuildCyber()
+{
+	return false;
+}
+
+bool BasicSc2Bot::TryBuildFirstGateway()
+{
+	return false;
+}
+
+bool BasicSc2Bot::TryBuildCliffPylon()
+{
+	return false;
+}
+
+bool BasicSc2Bot::InBasicOpener(int food_used) const
+{
+	if (food_used < 24)
+	{
+		return true;
+	}
+	return false;
 }
 
 size_t BasicSc2Bot::CountUnitType(UNIT_TYPEID unit_type) {
@@ -57,6 +114,21 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
         Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_SCV);
         break;
     }
+	case UNIT_TYPEID::PROTOSS_NEXUS: {			// trains workers until full.
+		if (Observation()->GetMinerals() >= 50 && unit->assigned_harvesters < 22 
+			&& Observation()->GetFoodWorkers() < 80 && Observation()->GetFoodUsed() < Observation()->GetFoodCap())
+		{
+			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
+		}
+	}
+	case UNIT_TYPEID::PROTOSS_PROBE: {
+		const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
+		if (!mineral_target) {
+			break;
+		}
+		Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
+		break;
+	}
     case UNIT_TYPEID::TERRAN_SCV: {
         const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
         if (!mineral_target) {

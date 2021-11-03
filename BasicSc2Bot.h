@@ -19,6 +19,18 @@ public:
 	const Unit* FindNearestMineralPatch(const Point2D& start);
 	size_t CountUnitType(UNIT_TYPEID unit_type);
 	bool TryBuildBarracks();
+	bool InBasicOpener(int food_used) const;
+
+
+
+	// early game functions
+	bool TryBuildAdept();
+	bool TryBuildWallPylon();
+	bool TryBuildGeyser();
+	bool TryBuildExpo();
+	bool TryBuildCyber();
+	bool TryBuildFirstGateway();
+	bool TryBuildCliffPylon();
 
 
 

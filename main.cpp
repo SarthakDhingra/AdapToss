@@ -18,12 +18,12 @@ int main(int argc, char* argv[]) {
 
 	BasicSc2Bot bot;
 	coordinator.SetParticipants({
-		CreateParticipant(Race::Terran, &bot),
+		CreateParticipant(Race::Protoss, &bot),
 		CreateComputer(Race::Zerg)
 		});
 
 	coordinator.LaunchStarcraft();
-	coordinator.StartGame(sc2::kMapBelShirVestigeLE);
+	coordinator.StartGame();
 
 	while (coordinator.Update()) {
 	}
