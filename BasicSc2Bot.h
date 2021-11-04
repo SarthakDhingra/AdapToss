@@ -20,6 +20,7 @@ public:
 	const Unit* FindNearestMineralPatch(const Point2D& start);
 	size_t CountUnitType(UNIT_TYPEID unit_type);
 	bool InBasicOpener(int food_used) const;
+	bool AssignProbeToGas(const Unit *geyser);
 
 
 

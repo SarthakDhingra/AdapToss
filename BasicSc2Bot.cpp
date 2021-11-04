@@ -31,16 +31,29 @@ void BasicSc2Bot::OnStep() {
 
 bool BasicSc2Bot::TryBuildWallPylon()
 {
+	const ObservationInterface* observation = Observation();
+
+	// builds our first pylon at 14 supply.
+	if (observation->GetFoodCap() > 16 && observation->GetFoodUsed() > 19)
+	{
+		return TryBuildStructure(ABILITY_ID::BUILD_PYLON, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_PYLON);
+	}
+
 	return false;
 }
 
 bool BasicSc2Bot::TryBuildGeyser()
 {
+	if (1)//Observation()->GetFoodWorkers() > 15)
+	{
+		return TryBuildStructure(ABILITY_ID::BUILD_ASSIMILATOR, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ASSIMILATOR);
+	}
 	return false;
 }
 
 bool BasicSc2Bot::TryBuildExpo()
 {
+	// todo: code this. It isn't going to be simple lol :p
 	return false;
 }
 
@@ -80,7 +93,7 @@ bool BasicSc2Bot::TryBuildCliffPylon()
 
 bool BasicSc2Bot::InBasicOpener(int food_used) const
 {
-	if (food_used < 24)
+	if (food_used < 30)
 	{
 		return true;
 	}
@@ -108,23 +121,59 @@ const Unit* BasicSc2Bot::FindNearestMineralPatch(const Point2D& start) {
 	return target;
 }
 
-void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
-	switch (unit->unit_type.ToType()) {
-	case UNIT_TYPEID::PROTOSS_NEXUS: {			// trains workers until full.
-		if (Observation()->GetMinerals() >= 50 && unit->assigned_harvesters < unit->ideal_harvesters
-			&& Observation()->GetFoodWorkers() < 80 && Observation()->GetFoodUsed() < Observation()->GetFoodCap())
-		{
-			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
+// assigns a probe to the geyser.
+bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
+{
+	const ObservationInterface* observation = Observation();
+	// If a unit already is building a supply structure of this type, do nothing.
+	// Also get an scv to build the structure.
+	const Unit* unit_to_assign = nullptr;
+	Units units = Observation()->GetUnits(Unit::Alliance::Self);
+	for (const auto& unit : units) {
+		if (unit->unit_type == UNIT_TYPEID::PROTOSS_PROBE && unit->orders[0].ability_id == ABILITY_ID::SMART) {
+			unit_to_assign = unit;
 		}
 	}
 
+	// if no  unit assigned return false (prevents reading nullptr exception)
+	if (!unit_to_assign) {
+		return false;
+	}
+
+	Actions()->UnitCommand(unit_to_assign, ABILITY_ID::SMART, geyser);
+	return true;
+}
+
+void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
+	switch (unit->unit_type.ToType()) {
+	case UNIT_TYPEID::PROTOSS_NEXUS: {			// trains workers until full.
+		// note, we need to update unit->assigned_harvesters because currently it counts scouting probes and dead probes.
+		if (unit->assigned_harvesters < (unit->ideal_harvesters + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
+		{
+			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
+		}
+		break;
+	}
+	case UNIT_TYPEID::PROTOSS_ASSIMILATOR: {			// pulls workers off minerals until full
+		if (unit->assigned_harvesters < unit->ideal_harvesters && Observation()->GetFoodWorkers() > 12)
+		{
+			AssignProbeToGas(unit);
+			break;
+		}
+	}
 	case UNIT_TYPEID::PROTOSS_GATEWAY: {
-		if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 2 && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE))
+		if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 1 && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE))
 		{
 			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
 			break;
 		}
+		if (CountUnitType(UNIT_TYPEID::PROTOSS_ZEALOT) < 1)
+		{
+			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ZEALOT);
+			break;
+		}
 	}
+									 
 	case UNIT_TYPEID::PROTOSS_CYBERNETICSCORE: {
 		Actions()->UnitCommand(unit, ABILITY_ID::RESEARCH_WARPGATE);
 		break;
@@ -215,22 +264,48 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	float rx = GetRandomScalar();
 	float ry = GetRandomScalar();
 
-	if (structure_type != UNIT_TYPEID::PROTOSS_PYLON)
-	{
-		for (PowerSource powersource : observation->GetPowerSources())
-		{
-			Actions()->UnitCommand(unit_to_build,
-				ability_type_for_structure,
-				Point2D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius));
-			return true;
-		}
-	}
-	else
+	if (structure_type == UNIT_TYPEID::PROTOSS_PYLON)
 	{
 		Actions()->UnitCommand(unit_to_build,
 			ability_type_for_structure,
 			Point2D(unit_to_build->pos.x + rx * 15.0f, unit_to_build->pos.y + ry * 15.0f));
 		return true;
+
+	}
+	else if (structure_type == UNIT_TYPEID::PROTOSS_ASSIMILATOR)
+	{
+		Units poss_geysers = observation->GetUnits();
+		std::vector<UNIT_TYPEID> gas_ids;
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER);
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_RICHVESPENEGEYSER);
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PURIFIERVESPENEGEYSER);
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PROTOSSVESPENEGEYSER);
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER);
+		for (const auto& poss_geyser : poss_geysers)
+		{
+			for (UNIT_TYPEID gas_id : gas_ids)
+			{
+				if (poss_geyser->unit_type == gas_id)
+				{
+					// this is having an issue actually building the geyser, but it finds them correctly.
+					Actions()->UnitCommand(unit_to_build,
+						ability_type_for_structure,
+						Point2D(poss_geyser->pos.x, poss_geyser->pos.y));
+					return true;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (const PowerSource powersource : observation->GetPowerSources())
+		{
+			Actions()->UnitCommand(unit_to_build,
+				ability_type_for_structure,
+				Point2D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius));
+				return true;
+		}
 	}
 
 	return false;
