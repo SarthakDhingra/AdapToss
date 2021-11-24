@@ -44,7 +44,7 @@ bool BasicSc2Bot::TryBuildWallPylon()
 
 bool BasicSc2Bot::TryBuildGeyser()
 {
-	if (1)//Observation()->GetFoodWorkers() > 15)
+	if (Observation()->GetFoodWorkers() > 15 && CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < 2)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_ASSIMILATOR, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ASSIMILATOR);
 	}
@@ -59,7 +59,6 @@ bool BasicSc2Bot::TryBuildExpo()
 
 bool BasicSc2Bot::TryBuildCyber()
 {
-	const ObservationInterface* observation = Observation();
 	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) > 0 && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) == 0)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_CYBERNETICSCORE, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_CYBERNETICSCORE);
@@ -70,8 +69,7 @@ bool BasicSc2Bot::TryBuildCyber()
 
 bool BasicSc2Bot::TryBuildFirstGateway()
 {
-	const ObservationInterface* observation = Observation();
-	if (observation->GetFoodUsed() > 14 && CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) == 0)
+	if (Observation()->GetFoodUsed() > 14 && CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) == 0)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_GATEWAY);
 	}
@@ -226,6 +224,17 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 
 }
 
+// returns the squared distance between two Units
+float BasicSc2Bot::Sq_Dist(const Unit* a, const Unit* b)
+{
+	float x, y;
+	x = (a->pos.x - b->pos.x);
+	x *= x;
+	y = (a->pos.y - b->pos.y);
+	y *= y;
+	return x + y;
+}
+
 
 // version for building only one building.
 bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type, UNIT_TYPEID structure_type) {
@@ -274,7 +283,16 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	}
 	else if (structure_type == UNIT_TYPEID::PROTOSS_ASSIMILATOR)
 	{
-		Units poss_geysers = observation->GetUnits();
+		Units poss_geysers = observation->GetUnits(Unit::Alliance(3));		// gets neutral units
+		Units poss_nexi = observation->GetUnits(Unit::Alliance(1));			// gets friendly units
+		Units nexi;
+		for (const auto& poss_nex : poss_nexi)								// puts all friendly nexi into nexi. Used for finding nearby geysers.
+		{
+			if (poss_nex->unit_type == UNIT_TYPEID::PROTOSS_NEXUS)
+			{
+				nexi.push_back(poss_nex);
+			}
+		}
 		std::vector<UNIT_TYPEID> gas_ids;
 		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
 		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER);
@@ -284,15 +302,25 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER);
 		for (const auto& poss_geyser : poss_geysers)
 		{
-			for (UNIT_TYPEID gas_id : gas_ids)
+			for (UNIT_TYPEID gas_id : gas_ids)				
 			{
-				if (poss_geyser->unit_type == gas_id)
+				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
 				{
-					// this is having an issue actually building the geyser, but it finds them correctly.
-					Actions()->UnitCommand(unit_to_build,
-						ability_type_for_structure,
-						poss_geyser);
-					return true;
+					bool close_to_nexus = false;
+					for (const auto& poss_nex : nexi)
+					{
+						if (Sq_Dist(poss_nex, poss_geyser) < 110)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+						{
+							close_to_nexus = true;
+						}
+					}
+					if (close_to_nexus)									// assigns the build task if we are near a nexus.
+					{
+						Actions()->UnitCommand(unit_to_build,
+							ability_type_for_structure,
+							poss_geyser);
+						return true;
+					}
 				}
 			}
 		}
