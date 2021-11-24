@@ -125,21 +125,26 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 	const ObservationInterface* observation = Observation();
 	// If a unit already is building a supply structure of this type, do nothing.
 	// Also get an scv to build the structure.
-	const Unit* unit_to_assign = nullptr;
+	Units* units_to_assign;
 	Units units = observation->GetUnits(Unit::Alliance::Self);
 	for (const auto& unit : units) {
 		if (unit->unit_type == UNIT_TYPEID::PROTOSS_PROBE && (!unit->orders.empty()) && unit->orders[0].ability_id == ABILITY_ID::SMART 
 			&& observation->GetUnit(unit->orders[0].target_unit_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR) {
-			unit_to_assign = unit;
+			units_to_assign->push_back(unit);
+			if (units_to_assign->size() >= geyser->ideal_harvesters - geyser->assigned_harvesters)
+			{
+				break;
+			}
 		}
 	}
 
 	// if no  unit assigned return false (prevents reading nullptr exception)
-	if (!unit_to_assign) {
+	if (units_to_assign->empty()) {
 		return false;
 	}
 
-	Actions()->UnitCommand(unit_to_assign, ABILITY_ID::SMART, geyser);
+	Actions()->UnitCommand(*units_to_assign, ABILITY_ID::SMART, geyser);
+
 	return true;
 }
 
@@ -157,8 +162,8 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 		if (unit->assigned_harvesters < unit->ideal_harvesters && Observation()->GetFoodWorkers() > 12)
 		{
 			AssignProbeToGas(unit);
-			break;
 		}
+		break;
 	}
 	case UNIT_TYPEID::PROTOSS_GATEWAY: {
 		if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 1 && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE))
