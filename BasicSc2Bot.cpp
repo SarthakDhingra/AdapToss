@@ -291,7 +291,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 					// this is having an issue actually building the geyser, but it finds them correctly.
 					Actions()->UnitCommand(unit_to_build,
 						ability_type_for_structure,
-						Point2D(poss_geyser->pos.x, poss_geyser->pos.y));
+						poss_geyser);
 					return true;
 				}
 			}
@@ -304,7 +304,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 			Actions()->UnitCommand(unit_to_build,
 				ability_type_for_structure,
 				Point2D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius));
-				return true;
+			return true;
 		}
 	}
 
