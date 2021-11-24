@@ -16,8 +16,8 @@ Download and install [Visual Studio 2019](https://www.visualstudio.com/downloads
 
 ```bat
 :: Clone the project
-$ git clone --recursive https://github.com/solinas/BasicSc2Bot.git
-$ cd BasicSc2Bot
+$ git clone --recursive https://github.com/SarthakDhingra/AdapToss.git
+$ cd AdapToss
 
 :: Create build directory.
 $ mkdir build
@@ -39,8 +39,8 @@ Note: Try opening the SC2 game client before installing. If the game crashes bef
 
 ```bat
 :: Clone the project
-$ git clone --recursive https://github.com/solinas/BasicSc2Bot.git
-$ cd BasicSc2Bot
+$ git clone --recursive https://github.com/SarthakDhingra/AdapToss.git
+$ cd AdapToss
 
 :: Create build directory.
 $ mkdir build
@@ -62,9 +62,9 @@ AI by specifying command line argurments.
 For example,
 
 ```
-./BasicSc2Bot.exe -a zerg -d Hard -m CactusValleyLE.SC2Map
-./BasicSc2Bot.exe -a zerg -d Hard -m ProximaStationLE.SC2Map
-./BasicSc2Bot.exe -a zerg -d Hard -m BelShirVestigeLE.SC2Map
+./BasicSc2Bot.exe -c -a zerg -d Hard -m CactusValleyLE.SC2Map
+./BasicSc2Bot.exe -c -a zerg -d Hard -m ProximaStationLE.SC2Map
+./BasicSc2Bot.exe -c -a zerg -d Hard -m BelShirVestigeLE.SC2Map
 ```
 
 will result in the bot playing against the zerg built-in AI on hard difficulty on the map CactusValleyLE. 
@@ -72,7 +72,7 @@ will result in the bot playing against the zerg built-in AI on hard difficulty o
 For Mac,
 
 ```
-./BasicSc2Bot -a zerg -d Hard -m CactusValleyLE.SC2Map
-./BasicSc2Bot -a zerg -d Hard -m ProximaStationLE.SC2Map
-./BasicSc2Bot -a zerg -d Hard -m BelShirVestigeLE.SC2Map
+./BasicSc2Bot -c -a zerg -d Hard -m CactusValleyLE.SC2Map
+./BasicSc2Bot -c -a zerg -d Hard -m ProximaStationLE.SC2Map
+./BasicSc2Bot -c -a zerg -d Hard -m BelShirVestigeLE.SC2Map
 ```
