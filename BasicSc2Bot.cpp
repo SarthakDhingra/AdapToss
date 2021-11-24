@@ -126,9 +126,10 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 	// If a unit already is building a supply structure of this type, do nothing.
 	// Also get an scv to build the structure.
 	const Unit* unit_to_assign = nullptr;
-	Units units = Observation()->GetUnits(Unit::Alliance::Self);
+	Units units = observation->GetUnits(Unit::Alliance::Self);
 	for (const auto& unit : units) {
-		if (unit->unit_type == UNIT_TYPEID::PROTOSS_PROBE && unit->orders[0].ability_id == ABILITY_ID::SMART) {
+		if (unit->unit_type == UNIT_TYPEID::PROTOSS_PROBE && (!unit->orders.empty()) && unit->orders[0].ability_id == ABILITY_ID::SMART 
+			&& observation->GetUnit(unit->orders[0].target_unit_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR) {
 			unit_to_assign = unit;
 		}
 	}
