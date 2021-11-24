@@ -17,7 +17,7 @@ Download and install [Visual Studio 2019](https://www.visualstudio.com/downloads
 ```bat
 :: Clone the project
 $ git clone --recursive https://github.com/SarthakDhingra/AdapToss.git
-$ cd BasicSc2Bot
+$ cd AdapToss
 
 :: Create build directory.
 $ mkdir build
@@ -40,7 +40,7 @@ Note: Try opening the SC2 game client before installing. If the game crashes bef
 ```bat
 :: Clone the project
 $ git clone --recursive https://github.com/SarthakDhingra/AdapToss.git
-$ cd BasicSc2Bot
+$ cd AdapToss
 
 :: Create build directory.
 $ mkdir build
