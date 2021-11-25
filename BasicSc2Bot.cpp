@@ -147,7 +147,7 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 	switch (unit->unit_type.ToType()) {
 	case UNIT_TYPEID::PROTOSS_NEXUS: {			// trains workers until full.
 		// note, we need to update unit->assigned_harvesters because currently it counts scouting probes and dead probes.
-		if (unit->assigned_harvesters < (unit->ideal_harvesters + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
+		if (unit->assigned_harvesters < (static_cast<size_t>(unit->ideal_harvesters) + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
 		{
 			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
 		}
@@ -328,7 +328,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	}
 	else
 	{
-		for (const PowerSource powersource : observation->GetPowerSources())
+		for (const PowerSource& powersource : observation->GetPowerSources())
 		{
 			Actions()->UnitCommand(unit_to_build,
 				ability_type_for_structure,
