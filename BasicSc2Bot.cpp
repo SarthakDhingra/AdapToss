@@ -8,6 +8,8 @@ using namespace sc2;
 void BasicSc2Bot::OnGameStart() {
 	scouting_system.Init(Observation(), Actions());
 
+	InitWarpInLocation();
+
 	return;
 }
 
@@ -25,6 +27,7 @@ void BasicSc2Bot::OnStep() {
 		TryBuildCyber();
 		TryBuildFirstGateway();
 		TryBuildCliffPylon();
+		TryBuildRoboticsFacility();
 		CheckHarvesterStatus();
 	}
 	return;
@@ -98,9 +101,19 @@ bool BasicSc2Bot::TryBuildCliffPylon()
 	return false;
 }
 
+bool BasicSc2Bot::TryBuildRoboticsFacility()
+{
+	if (Observation()->GetFoodUsed() > 20 && CountUnitType(UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY) == 0)
+	{
+		return TryBuildStructure(ABILITY_ID::BUILD_ROBOTICSFACILITY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY);
+	}
+
+	return false;
+}
+
 bool BasicSc2Bot::InBasicOpener(int food_used) const
 {
-	if (food_used < 30)
+	if (food_used < 40)
 	{
 		return true;
 	}
@@ -184,7 +197,7 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 	switch (unit->unit_type.ToType()) {
 	case UNIT_TYPEID::PROTOSS_NEXUS: {			// trains workers until full.
 		// note, we need to update unit->assigned_harvesters because currently it counts scouting probes and dead probes.
-		if (unit->assigned_harvesters < (unit->ideal_harvesters + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
+		if (unit->assigned_harvesters < (static_cast<size_t>(unit->ideal_harvesters) + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
 		{
 			//Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
 		}
@@ -201,10 +214,17 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ZEALOT);
 			break;
 		}
-	}
-									 
+	}								 
 	case UNIT_TYPEID::PROTOSS_CYBERNETICSCORE: {
 		Actions()->UnitCommand(unit, ABILITY_ID::RESEARCH_WARPGATE);
+		break;
+	}
+	case UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY: {
+		OnRoboticsFacilityIdle(unit);
+		break;
+	}
+	case UNIT_TYPEID::PROTOSS_WARPPRISM: {
+		OnWarpPrismIdle(unit);
 		break;
 	}
 	case UNIT_TYPEID::PROTOSS_PROBE: {
@@ -219,6 +239,52 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 		break;
 	}
 	}
+}
+
+void BasicSc2Bot::OnRoboticsFacilityIdle(const Unit* unit) {
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_WARPPRISM) < 1) {
+		Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_WARPPRISM);
+	}
+}
+
+void BasicSc2Bot::OnWarpPrismIdle(const Unit* unit) {
+	// moves warp prism to a location offset from the direct path between bases
+	if (Point2DI(unit->pos) != Point2DI(warp_in_position)) {
+		Actions()->UnitCommand(unit, ABILITY_ID::MOVE_MOVE, warp_in_position);
+	}
+	else {
+		Actions()->UnitCommand(unit, ABILITY_ID::MORPH_WARPPRISMPHASINGMODE);
+	}
+}
+
+// Determine where warp prism should move and where units should warp in to.
+void BasicSc2Bot::InitWarpInLocation() {
+	// specify proportion of distance between bases to travel and distance offset from the direct line
+	// between bases
+	float distance_factor = 0.8f;
+	int normal_distance = 10;
+
+	const GameInfo& game_info = Observation()->GetGameInfo();
+	Point2D enemy_base = game_info.enemy_start_locations.front();
+	// TODO: verify this is the player start location and see if there's a better way to get that data
+	Point2D player_base = game_info.start_locations.back();
+
+	Point2D line_between_bases = enemy_base - player_base;
+
+	// TODO: figure out based on scout probe's path which normal is less likely to run into enemies
+	Point2D normal1(-line_between_bases.y, line_between_bases.x);
+	Point2D normal2(line_between_bases.y, -line_between_bases.x);
+	Normalize2D(normal1);
+	Normalize2D(normal2);
+
+	float distance = Distance2D(enemy_base, player_base);
+	Normalize2D(line_between_bases);
+	Point2D position_between_bases = player_base + line_between_bases * distance * distance_factor;
+
+	Point2D position = position_between_bases + normal1 * normal_distance;
+
+	// TODO: look into more checks for if the location is pathable (Observation()->IsPathable)
+	warp_in_position = position;
 }
 
 bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type) {
@@ -479,7 +545,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	}
 	else
 	{
-		for (const PowerSource powersource : observation->GetPowerSources())
+		for (const PowerSource& powersource : observation->GetPowerSources())
 		{
 			Actions()->UnitCommand(unit_to_build,
 				ability_type_for_structure,
