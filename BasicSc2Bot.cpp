@@ -14,6 +14,7 @@ void BasicSc2Bot::OnGameStart() {
 void BasicSc2Bot::OnStep() {
 
 	scouting_system.ScoutingStep();
+	DefenseStep();
 
 	// If we have less than 24 supply used, do opener things.
 	int food_used = Observation()->GetFoodUsed();
@@ -27,6 +28,56 @@ void BasicSc2Bot::OnStep() {
 		TryBuildCliffPylon();
 	}
 	return;
+}
+
+
+void BasicSc2Bot::DefenseStep() {
+	SetDefense();
+	SendDefense();
+}
+
+void BasicSc2Bot::SetDefense() {
+
+	// later should pull this from map of types
+	UNIT_TYPEID adept_type = UNIT_TYPEID::PROTOSS_ADEPT;
+
+	// defense should be filled with all adepts available
+	if (defense.size() < CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT)) {
+
+		//clear out dfense
+		defense.clear();
+
+		// push all adepts to defense vector
+		Units units = Observation()->GetUnits(Unit::Alliance::Self);
+		for (const auto& unit : units) {
+			if (unit->unit_type.ToType() == adept_type) {
+				defense.push_back(unit);
+			}
+		}
+	}
+
+}
+
+void BasicSc2Bot::SendDefense() {
+
+	// get all enemies
+	Units enemies = Observation()->GetUnits(Unit::Alliance::Enemy);
+	const GameInfo& game_info = Observation()->GetGameInfo();
+
+	// this value needs to be tuned
+	float distance = 400;
+
+	for (const auto& e : enemies) {
+		float d = DistanceSquared2D(e->pos, game_info.start_locations.back());
+		
+		// TODO: If a large number of enemies are amassing and are closeish to the base, we can create more defense units maybe? 
+		if (d < distance) {
+			for (const auto& d : defense) {
+				Actions()->UnitCommand(d, ABILITY_ID::ATTACK_ATTACK, e->pos);
+			}
+		}
+	}
+
 }
 
 bool BasicSc2Bot::TryBuildWallPylon()
@@ -169,11 +220,7 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
 				break;
 			}
-			if (CountUnitType(UNIT_TYPEID::PROTOSS_ZEALOT) < 1)
-			{
-				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ZEALOT);
-				break;
-			}
+
 		}
 									 
 		case UNIT_TYPEID::PROTOSS_CYBERNETICSCORE: {
@@ -192,11 +239,10 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 
 		case UNIT_TYPEID::PROTOSS_ADEPT: {
 			
-			// always have 2 adepts
-			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 2) {
+			// always have 3 adepts
+			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 3) {
 				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
 			}
-			
 			break;
 		}
 

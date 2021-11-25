@@ -33,10 +33,18 @@ public:
 	bool TryBuildFirstGateway();
 	bool TryBuildCliffPylon();
 
+	// defense steps
+	void DefenseStep();
+	void SetDefense();
+	void SendDefense();
+
 
 
 private:
 	ScoutingSystem scouting_system;
+
+	// defense attributes
+	Units defense;
 };
 
 #endif
