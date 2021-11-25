@@ -48,11 +48,11 @@ void DefenseSystem::SendDefense() {
 	// this value needs to be tuned
 	float distance = 400;
 
+	// TODO: If a large number of enemies are amassing and are closeish to the base, we can create more defense units maybe? 
 	for (const auto& e : enemies) {
 		float d = DistanceSquared2D(e->pos, game_info.start_locations.back());
 
-		// TODO: If a large number of enemies are amassing and are closeish to the base, we can create more defense units maybe? 
-		// possible at this point, that the defenders will be dead
+		// Attack enemy with all defenders
 		if (d < distance) {
 			for (const auto& d : defense) {
 				actions->UnitCommand(d, ABILITY_ID::ATTACK, e->pos);
