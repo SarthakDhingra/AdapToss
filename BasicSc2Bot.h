@@ -19,26 +19,25 @@ public:
 	bool TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type, UNIT_TYPEID structure_type);
 	const Unit* FindNearestMineralPatch(const Point2D& start);
 	size_t CountUnitType(UNIT_TYPEID unit_type);
-	bool InBasicOpener(int food_used) const;
+	bool InBasicOpener();
 	bool AssignProbeToGas(const Unit *geyser);
 	float SqDist(const Unit *a, const Unit *b);
 	bool CheckHarvesterStatus();
 
-
+	bool TryBuildPylon();
 
 	// early game functions
-	bool TryBuildWallPylon();
 	bool TryBuildGeyser();
 	bool TryBuildExpo();
 	bool TryBuildCyber();
 	bool TryBuildFirstGateway();
-	bool TryBuildCliffPylon();
 	bool TryBuildRoboticsFacility();
 
 	void OnRoboticsFacilityIdle(const Unit* unit);
 	void OnWarpPrismIdle(const Unit* unit);
 
 	void InitWarpInLocation();
+	void InitData();
 
 
 
@@ -46,6 +45,9 @@ private:
 	ScoutingSystem scouting_system;
 
 	Point2D warp_in_position;
+
+	std::map<std::string, int> supply_thresholds;
+	std::map<std::string, int> unit_limits;
 };
 
 #endif
