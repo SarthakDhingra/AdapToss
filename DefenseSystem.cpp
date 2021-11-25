@@ -22,7 +22,7 @@ void  DefenseSystem::SetDefense() {
 	UNIT_TYPEID adept_type = UNIT_TYPEID::PROTOSS_ADEPT;
 
 	// defense should be filled with all adepts available
-	if (defense.size() < CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT)) {
+	if (defense.size() != CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT)) {
 
 		//clear out dfense
 		defense.clear();
