@@ -104,10 +104,10 @@ void ScoutingSystem::ScoutEarlyRush() {
 	else if (enemy_race == Race::Terran) {
 		num_gas = observation->GetUnits(Unit::Alliance::Enemy, IsUnit(UNIT_TYPEID::TERRAN_REFINERY)).size();
 		
-		// Check for low barracks
+		// Check for lots of barracks
 		int num_barracks = observation->GetUnits(Unit::Alliance::Enemy, IsUnit(UNIT_TYPEID::TERRAN_BARRACKS)).size();
 
-		if (num_barracks < 3 && supply > early_scouting_thresholds["barracks"]) {
+		if (num_barracks > 2 && supply > early_scouting_thresholds["barracks"]) {
 			scouting_data["early_rush"] = true;
 		}
 	}
@@ -123,7 +123,7 @@ void ScoutingSystem::ScoutEarlyRush() {
 	}
 
 	// Check for early gas
-	if (num_gas > 2 && supply < early_scouting_thresholds["gas"]) {
+	if (num_gas > 1 && supply < early_scouting_thresholds["gas"]) {
 		scouting_data["early_rush"] = true;
 	}
 }
