@@ -34,10 +34,17 @@ public:
 	bool TryBuildCliffPylon();
 	bool TryBuildRoboticsFacility();
 
+	void OnRoboticsFacilityIdle(const Unit* unit);
+	void OnWarpPrismIdle(const Unit* unit);
+
+	void InitWarpInLocation();
+
 
 
 private:
 	ScoutingSystem scouting_system;
+
+	Point2D warp_in_position;
 };
 
 #endif
