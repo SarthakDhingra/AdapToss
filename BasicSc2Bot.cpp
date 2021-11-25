@@ -145,51 +145,67 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 
 void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 	switch (unit->unit_type.ToType()) {
-	case UNIT_TYPEID::PROTOSS_NEXUS: {			// trains workers until full.
-		// note, we need to update unit->assigned_harvesters because currently it counts scouting probes and dead probes.
-		if (unit->assigned_harvesters < (unit->ideal_harvesters + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
-		{
-			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
-		}
-		break;
-	}
-	case UNIT_TYPEID::PROTOSS_ASSIMILATOR: {			// pulls workers off minerals until full
-		if (unit->assigned_harvesters < unit->ideal_harvesters && Observation()->GetFoodWorkers() > 12)
-		{
-			AssignProbeToGas(unit);
+
+		case UNIT_TYPEID::PROTOSS_NEXUS: {			// trains workers until full.
+			// note, we need to update unit->assigned_harvesters because currently it counts scouting probes and dead probes.
+			if (unit->assigned_harvesters < (unit->ideal_harvesters + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
+			{
+				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
+			}
 			break;
 		}
-	}
-	case UNIT_TYPEID::PROTOSS_GATEWAY: {
-		if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 1 && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE))
-		{
-			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
-			break;
+
+		case UNIT_TYPEID::PROTOSS_ASSIMILATOR: {			// pulls workers off minerals until full
+			if (unit->assigned_harvesters < unit->ideal_harvesters && Observation()->GetFoodWorkers() > 12)
+			{
+				AssignProbeToGas(unit);
+				break;
+			}
 		}
-		if (CountUnitType(UNIT_TYPEID::PROTOSS_ZEALOT) < 1)
-		{
-			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ZEALOT);
-			break;
+
+		case UNIT_TYPEID::PROTOSS_GATEWAY: {
+			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 1 && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE))
+			{
+				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
+				break;
+			}
+			if (CountUnitType(UNIT_TYPEID::PROTOSS_ZEALOT) < 1)
+			{
+				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ZEALOT);
+				break;
+			}
 		}
-	}
 									 
-	case UNIT_TYPEID::PROTOSS_CYBERNETICSCORE: {
-		Actions()->UnitCommand(unit, ABILITY_ID::RESEARCH_WARPGATE);
-		break;
-	}
-	case UNIT_TYPEID::PROTOSS_PROBE: {
-		const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
-		if (!mineral_target) {
+		case UNIT_TYPEID::PROTOSS_CYBERNETICSCORE: {
+			Actions()->UnitCommand(unit, ABILITY_ID::RESEARCH_WARPGATE);
 			break;
 		}
-		Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
-		break;
-	}
-	default: {
-		break;
-	}
+
+		case UNIT_TYPEID::PROTOSS_PROBE: {
+			const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
+			if (!mineral_target) {
+				break;
+			}
+			Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
+			break;
+		}
+
+		case UNIT_TYPEID::PROTOSS_ADEPT: {
+			
+			// always have 2 adepts
+			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 2) {
+				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
+			}
+			
+			break;
+		}
+
+		default: {
+			break;
+		}
 	}
 }
+
 
 bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type) {
 	const ObservationInterface* observation = Observation();

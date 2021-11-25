@@ -82,7 +82,7 @@ void ScoutingSystem::SendScout() {
 	}
 
 	// Send scout to enemy base
-	actions->UnitCommand(scout, ABILITY_ID::MOVE_MOVE, game_info.enemy_start_locations.front());
+	//actions->UnitCommand(scout, ABILITY_ID::MOVE_MOVE, game_info.enemy_start_locations.front());
 
 	return;
 }
