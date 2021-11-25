@@ -32,6 +32,7 @@ public:
 	bool TryBuildCyber();
 	bool TryBuildFirstGateway();
 	bool TryBuildCliffPylon();
+	bool TryBuildRoboticsFacility();
 
 
 

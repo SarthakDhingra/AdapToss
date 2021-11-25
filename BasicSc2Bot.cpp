@@ -25,6 +25,7 @@ void BasicSc2Bot::OnStep() {
 		TryBuildCyber();
 		TryBuildFirstGateway();
 		TryBuildCliffPylon();
+		TryBuildRoboticsFacility();
 	}
 	return;
 }
@@ -89,9 +90,19 @@ bool BasicSc2Bot::TryBuildCliffPylon()
 	return false;
 }
 
+bool BasicSc2Bot::TryBuildRoboticsFacility()
+{
+	if (Observation()->GetFoodUsed() > 20 && CountUnitType(UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY) == 0)
+	{
+		return TryBuildStructure(ABILITY_ID::BUILD_ROBOTICSFACILITY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY);
+	}
+
+	return false;
+}
+
 bool BasicSc2Bot::InBasicOpener(int food_used) const
 {
-	if (food_used < 30)
+	if (food_used < 40)
 	{
 		return true;
 	}
