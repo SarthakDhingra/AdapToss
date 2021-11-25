@@ -8,6 +8,8 @@ using namespace sc2;
 void BasicSc2Bot::OnGameStart() {
 	scouting_system.Init(Observation(), Actions());
 
+	InitWarpInLocation();
+
 	return;
 }
 
@@ -26,6 +28,8 @@ void BasicSc2Bot::OnStep() {
 		TryBuildCyber();
 		TryBuildFirstGateway();
 		TryBuildCliffPylon();
+		TryBuildRoboticsFacility();
+		CheckHarvesterStatus();
 	}
 	return;
 }
@@ -73,6 +77,7 @@ void BasicSc2Bot::SendDefense() {
 		// TODO: If a large number of enemies are amassing and are closeish to the base, we can create more defense units maybe? 
 		if (d < distance) {
 			for (const auto& d : defense) {
+				std::cout << "ATTACKING: " << defense.size() << std::endl;
 				Actions()->UnitCommand(d, ABILITY_ID::ATTACK_ATTACK, e->pos);
 			}
 		}
@@ -140,9 +145,19 @@ bool BasicSc2Bot::TryBuildCliffPylon()
 	return false;
 }
 
+bool BasicSc2Bot::TryBuildRoboticsFacility()
+{
+	if (Observation()->GetFoodUsed() > 20 && CountUnitType(UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY) == 0)
+	{
+		return TryBuildStructure(ABILITY_ID::BUILD_ROBOTICSFACILITY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY);
+	}
+
+	return false;
+}
+
 bool BasicSc2Bot::InBasicOpener(int food_used) const
 {
-	if (food_used < 30)
+	if (food_used < 40)
 	{
 		return true;
 	}
@@ -176,42 +191,63 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 	const ObservationInterface* observation = Observation();
 	// If a unit already is building a supply structure of this type, do nothing.
 	// Also get an scv to build the structure.
-	const Unit* unit_to_assign = nullptr;
+	Units units_to_assign;
 	Units units = observation->GetUnits(Unit::Alliance::Self);
 	for (const auto& unit : units) {
-		if (unit->unit_type == UNIT_TYPEID::PROTOSS_PROBE && (!unit->orders.empty()) && unit->orders[0].ability_id == ABILITY_ID::SMART 
-			&& observation->GetUnit(unit->orders[0].target_unit_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR) {
-			unit_to_assign = unit;
+		if (unit->unit_type == UNIT_TYPEID::PROTOSS_PROBE && (unit->orders.empty() || (unit->orders[0].ability_id == ABILITY_ID::SMART 
+			&& observation->GetUnit(unit->orders[0].target_unit_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR))) {
+			units_to_assign.push_back(unit);
+			if (units_to_assign.size() >= geyser->ideal_harvesters - geyser->assigned_harvesters)
+			{
+				break;
+			}
 		}
 	}
 
 	// if no  unit assigned return false (prevents reading nullptr exception)
-	if (!unit_to_assign) {
+	if (units_to_assign.empty()) {
 		return false;
 	}
 
-	Actions()->UnitCommand(unit_to_assign, ABILITY_ID::SMART, geyser);
+	Actions()->UnitCommand(units_to_assign, ABILITY_ID::SMART, geyser);
+
+	return true;
+}
+
+bool BasicSc2Bot::CheckHarvesterStatus()
+{
+	Units units = Observation()->GetUnits(Unit::Alliance::Self);
+	for (const auto& unit : units)
+	{
+		if (unit->unit_type == UNIT_TYPEID::PROTOSS_ASSIMILATOR)
+		{
+			if (unit->vespene_contents > 0 && unit->ideal_harvesters > unit->assigned_harvesters)
+			{
+				AssignProbeToGas(unit);
+			}
+		}
+		else if (unit->unit_type == UNIT_TYPEID::PROTOSS_NEXUS)
+		{
+			if (unit->ideal_harvesters > unit->assigned_harvesters && unit->orders.empty())
+			{
+				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
+			}
+		}
+	}
 	return true;
 }
 
 void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 	switch (unit->unit_type.ToType()) {
 
-		case UNIT_TYPEID::PROTOSS_NEXUS: {			// trains workers until full.
+		case UNIT_TYPEID::PROTOSS_NEXUS: {			
+			// trains workers until full.
 			// note, we need to update unit->assigned_harvesters because currently it counts scouting probes and dead probes.
-			if (unit->assigned_harvesters < (unit->ideal_harvesters + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
+			if (unit->assigned_harvesters < (static_cast<size_t>(unit->ideal_harvesters) + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
 			{
-				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
+				//Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
 			}
 			break;
-		}
-
-		case UNIT_TYPEID::PROTOSS_ASSIMILATOR: {			// pulls workers off minerals until full
-			if (unit->assigned_harvesters < unit->ideal_harvesters && Observation()->GetFoodWorkers() > 12)
-			{
-				AssignProbeToGas(unit);
-				break;
-			}
 		}
 
 		case UNIT_TYPEID::PROTOSS_GATEWAY: {
@@ -225,6 +261,16 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 									 
 		case UNIT_TYPEID::PROTOSS_CYBERNETICSCORE: {
 			Actions()->UnitCommand(unit, ABILITY_ID::RESEARCH_WARPGATE);
+			break;
+		}
+
+		case UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY: {
+			OnRoboticsFacilityIdle(unit);
+			break;
+		}
+
+		case UNIT_TYPEID::PROTOSS_WARPPRISM: {
+			OnWarpPrismIdle(unit);
 			break;
 		}
 
@@ -243,15 +289,63 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 3) {
 				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
 			}
+
 			break;
 		}
 
 		default: {
 			break;
 		}
+	
 	}
 }
 
+
+void BasicSc2Bot::OnRoboticsFacilityIdle(const Unit* unit) {
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_WARPPRISM) < 1) {
+		Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_WARPPRISM);
+	}
+}
+
+void BasicSc2Bot::OnWarpPrismIdle(const Unit* unit) {
+	// moves warp prism to a location offset from the direct path between bases
+	if (Point2DI(unit->pos) != Point2DI(warp_in_position)) {
+		Actions()->UnitCommand(unit, ABILITY_ID::MOVE_MOVE, warp_in_position);
+	}
+	else {
+		Actions()->UnitCommand(unit, ABILITY_ID::MORPH_WARPPRISMPHASINGMODE);
+	}
+}
+
+// Determine where warp prism should move and where units should warp in to.
+void BasicSc2Bot::InitWarpInLocation() {
+	// specify proportion of distance between bases to travel and distance offset from the direct line
+	// between bases
+	float distance_factor = 0.8f;
+	int normal_distance = 10;
+
+	const GameInfo& game_info = Observation()->GetGameInfo();
+	Point2D enemy_base = game_info.enemy_start_locations.front();
+	// TODO: verify this is the player start location and see if there's a better way to get that data
+	Point2D player_base = game_info.start_locations.back();
+
+	Point2D line_between_bases = enemy_base - player_base;
+
+	// TODO: figure out based on scout probe's path which normal is less likely to run into enemies
+	Point2D normal1(-line_between_bases.y, line_between_bases.x);
+	Point2D normal2(line_between_bases.y, -line_between_bases.x);
+	Normalize2D(normal1);
+	Normalize2D(normal2);
+
+	float distance = Distance2D(enemy_base, player_base);
+	Normalize2D(line_between_bases);
+	Point2D position_between_bases = player_base + line_between_bases * distance * distance_factor;
+
+	Point2D position = position_between_bases + normal1 * normal_distance;
+
+	// TODO: look into more checks for if the location is pathable (Observation()->IsPathable)
+	warp_in_position = position;
+}
 
 bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type) {
 	const ObservationInterface* observation = Observation();
@@ -288,7 +382,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 }
 
 // returns the squared distance between two Units
-float BasicSc2Bot::Sq_Dist(const Unit* a, const Unit* b)
+float BasicSc2Bot::SqDist(const Unit* a, const Unit* b)
 {
 	float x, y;
 	x = (a->pos.x - b->pos.x);
@@ -372,7 +466,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 					bool close_to_nexus = false;
 					for (const auto& poss_nex : nexi)
 					{
-						if (Sq_Dist(poss_nex, poss_geyser) < 110)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+						if (SqDist(poss_nex, poss_geyser) < 110)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
 						{
 							close_to_nexus = true;
 						}
@@ -390,7 +484,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	}
 	else
 	{
-		for (const PowerSource powersource : observation->GetPowerSources())
+		for (const PowerSource& powersource : observation->GetPowerSources())
 		{
 			Actions()->UnitCommand(unit_to_build,
 				ability_type_for_structure,

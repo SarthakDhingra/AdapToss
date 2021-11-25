@@ -21,7 +21,8 @@ public:
 	size_t CountUnitType(UNIT_TYPEID unit_type);
 	bool InBasicOpener(int food_used) const;
 	bool AssignProbeToGas(const Unit *geyser);
-	float Sq_Dist(const Unit *a, const Unit *b);
+	float SqDist(const Unit *a, const Unit *b);
+	bool CheckHarvesterStatus();
 
 
 
@@ -32,6 +33,12 @@ public:
 	bool TryBuildCyber();
 	bool TryBuildFirstGateway();
 	bool TryBuildCliffPylon();
+	bool TryBuildRoboticsFacility();
+
+	void OnRoboticsFacilityIdle(const Unit* unit);
+	void OnWarpPrismIdle(const Unit* unit);
+
+	void InitWarpInLocation();
 
 	// defense steps
 	void DefenseStep();
@@ -45,6 +52,8 @@ private:
 
 	// defense attributes
 	Units defense;
+
+	Point2D warp_in_position;
 };
 
 #endif
