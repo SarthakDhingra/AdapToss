@@ -25,6 +25,7 @@ void BasicSc2Bot::OnStep() {
 		TryBuildCyber();
 		TryBuildFirstGateway();
 		TryBuildCliffPylon();
+		CheckHarvesterStatus();
 	}
 	return;
 }
@@ -125,21 +126,49 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 	const ObservationInterface* observation = Observation();
 	// If a unit already is building a supply structure of this type, do nothing.
 	// Also get an scv to build the structure.
-	const Unit* unit_to_assign = nullptr;
+	Units units_to_assign;
 	Units units = observation->GetUnits(Unit::Alliance::Self);
 	for (const auto& unit : units) {
-		if (unit->unit_type == UNIT_TYPEID::PROTOSS_PROBE && (!unit->orders.empty()) && unit->orders[0].ability_id == ABILITY_ID::SMART 
-			&& observation->GetUnit(unit->orders[0].target_unit_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR) {
-			unit_to_assign = unit;
+		if (unit->unit_type == UNIT_TYPEID::PROTOSS_PROBE && (unit->orders.empty() || (unit->orders[0].ability_id == ABILITY_ID::SMART 
+			&& observation->GetUnit(unit->orders[0].target_unit_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR))) {
+			units_to_assign.push_back(unit);
+			if (units_to_assign.size() >= geyser->ideal_harvesters - geyser->assigned_harvesters)
+			{
+				break;
+			}
 		}
 	}
 
 	// if no  unit assigned return false (prevents reading nullptr exception)
-	if (!unit_to_assign) {
+	if (units_to_assign.empty()) {
 		return false;
 	}
 
-	Actions()->UnitCommand(unit_to_assign, ABILITY_ID::SMART, geyser);
+	Actions()->UnitCommand(units_to_assign, ABILITY_ID::SMART, geyser);
+
+	return true;
+}
+
+bool BasicSc2Bot::CheckHarvesterStatus()
+{
+	Units units = Observation()->GetUnits(Unit::Alliance::Self);
+	for (const auto& unit : units)
+	{
+		if (unit->unit_type == UNIT_TYPEID::PROTOSS_ASSIMILATOR)
+		{
+			if (unit->vespene_contents > 0 && unit->ideal_harvesters > unit->assigned_harvesters)
+			{
+				AssignProbeToGas(unit);
+			}
+		}
+		else if (unit->unit_type == UNIT_TYPEID::PROTOSS_NEXUS)
+		{
+			if (unit->ideal_harvesters > unit->assigned_harvesters && unit->orders.empty())
+			{
+				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
+			}
+		}
+	}
 	return true;
 }
 
@@ -149,16 +178,9 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 		// note, we need to update unit->assigned_harvesters because currently it counts scouting probes and dead probes.
 		if (unit->assigned_harvesters < (unit->ideal_harvesters + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
 		{
-			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
+			//Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
 		}
 		break;
-	}
-	case UNIT_TYPEID::PROTOSS_ASSIMILATOR: {			// pulls workers off minerals until full
-		if (unit->assigned_harvesters < unit->ideal_harvesters && Observation()->GetFoodWorkers() > 12)
-		{
-			AssignProbeToGas(unit);
-			break;
-		}
 	}
 	case UNIT_TYPEID::PROTOSS_GATEWAY: {
 		if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 1 && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE))
@@ -226,7 +248,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 }
 
 // returns the squared distance between two Units
-float BasicSc2Bot::Sq_Dist(const Unit* a, const Unit* b)
+float BasicSc2Bot::SqDist(const Unit* a, const Unit* b)
 {
 	float x, y;
 	x = (a->pos.x - b->pos.x);
@@ -310,7 +332,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 					bool close_to_nexus = false;
 					for (const auto& poss_nex : nexi)
 					{
-						if (Sq_Dist(poss_nex, poss_geyser) < 110)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+						if (SqDist(poss_nex, poss_geyser) < 110)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
 						{
 							close_to_nexus = true;
 						}
