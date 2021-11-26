@@ -7,6 +7,7 @@
 #include "sc2utils/sc2_manage_process.h"
 #include "sc2utils/sc2_arg_parser.h"
 #include "ScoutingSystem.h"
+#include "DefenseSystem.h"
 
 using namespace sc2;
 
@@ -44,7 +45,7 @@ public:
 
 private:
 	ScoutingSystem scouting_system;
-
+	DefenseSystem defense_system;
 	Point2D warp_in_position;
 };
 
