@@ -9,6 +9,9 @@ void DefenseSystem::Init(const ObservationInterface* obs, ActionInterface* act) 
 	// Scouting system needs to be initialized on game start rather than at construction
 	observation = obs;
 	actions = act;
+
+	// this value needs to be tuned
+	attack_radius = 400;
 }
 
 void DefenseSystem::DefenseStep() {
@@ -45,15 +48,14 @@ void DefenseSystem::SendDefense() {
 	Units enemies = observation->GetUnits(Unit::Alliance::Enemy);
 	const GameInfo& game_info = observation->GetGameInfo();
 
-	// this value needs to be tuned
-	float distance = 400;
+
 
 	// TODO: If a large number of enemies are amassing and are closeish to the base, we can create more defense units maybe? 
 	for (const auto& e : enemies) {
 		float d = DistanceSquared2D(e->pos, game_info.start_locations.back());
 
 		// Attack enemy with all defenders
-		if (d < distance) {
+		if (d < attack_radius) {
 			for (const auto& d : defense) {
 				actions->UnitCommand(d, ABILITY_ID::ATTACK, e->pos);
 			}

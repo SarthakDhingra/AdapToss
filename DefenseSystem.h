@@ -14,6 +14,7 @@ public:
 
 private:
 	Units defense;
+	float attack_radius;
 	const ObservationInterface* observation = nullptr;
 	ActionInterface* actions = nullptr;
 };
