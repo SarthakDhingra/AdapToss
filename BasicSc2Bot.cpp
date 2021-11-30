@@ -7,6 +7,7 @@ using namespace sc2;
 
 void BasicSc2Bot::OnGameStart() {
 	scouting_system.Init(Observation(), Actions());
+	defense_system.Init(Observation(), Actions());
 
 	InitData();
 	InitWarpInLocation();
@@ -17,6 +18,7 @@ void BasicSc2Bot::OnGameStart() {
 void BasicSc2Bot::OnStep() {
 
 	scouting_system.ScoutingStep();
+	defense_system.DefenseStep();
 
 	TryBuildPylon();
 	CheckHarvesterStatus();
@@ -46,7 +48,7 @@ void BasicSc2Bot::InitData() {
 		{"assimilator", 2},
 		{"cybernetics_core", 1},
 		{"gateway", 1},
-		{"adept", 1},
+		{"adept", 3},
 		{"zealot", 1},
 		{"robotics_facility", 1},
 		{"warp_prism", 1}
@@ -197,51 +199,62 @@ bool BasicSc2Bot::CheckHarvesterStatus()
 
 void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 	switch (unit->unit_type.ToType()) {
-	case UNIT_TYPEID::PROTOSS_NEXUS: {			// trains workers until full.
-		// note, we need to update unit->assigned_harvesters because currently it counts scouting probes and dead probes.
-		if (unit->assigned_harvesters < (static_cast<size_t>(unit->ideal_harvesters) + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
-		{
-			//Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
-		}
-		break;
-	}
-	case UNIT_TYPEID::PROTOSS_GATEWAY: {
-		if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < unit_limits["adept"] && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE))
-		{
-			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
+
+		case UNIT_TYPEID::PROTOSS_NEXUS: {			
+			// trains workers until full.
+			// note, we need to update unit->assigned_harvesters because currently it counts scouting probes and dead probes.
+			if (unit->assigned_harvesters < (static_cast<size_t>(unit->ideal_harvesters) + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
+			{
+				//Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
+			}
+
 			break;
 		}
-		if (CountUnitType(UNIT_TYPEID::PROTOSS_ZEALOT) < unit_limits["zealot"])
-		{
-			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ZEALOT);
+
+		case UNIT_TYPEID::PROTOSS_GATEWAY: {
+			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < unit_limits["adept"])
+			{
+				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
+				
+			}
+			if (CountUnitType(UNIT_TYPEID::PROTOSS_ZEALOT) < unit_limits["zealot"])
+			{
+				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ZEALOT);
+			}
 			break;
 		}
-	}								 
-	case UNIT_TYPEID::PROTOSS_CYBERNETICSCORE: {
-		Actions()->UnitCommand(unit, ABILITY_ID::RESEARCH_WARPGATE);
-		break;
-	}
-	case UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY: {
-		OnRoboticsFacilityIdle(unit);
-		break;
-	}
-	case UNIT_TYPEID::PROTOSS_WARPPRISM: {
-		OnWarpPrismIdle(unit);
-		break;
-	}
-	case UNIT_TYPEID::PROTOSS_PROBE: {
-		const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
-		if (!mineral_target) {
+									 
+		case UNIT_TYPEID::PROTOSS_CYBERNETICSCORE: {
+			Actions()->UnitCommand(unit, ABILITY_ID::RESEARCH_WARPGATE);
 			break;
 		}
-		Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
-		break;
-	}
-	default: {
-		break;
-	}
+
+		case UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY: {
+			OnRoboticsFacilityIdle(unit);
+			break;
+		}
+
+		case UNIT_TYPEID::PROTOSS_WARPPRISM: {
+			OnWarpPrismIdle(unit);
+			break;
+		}
+
+		case UNIT_TYPEID::PROTOSS_PROBE: {
+			const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
+			if (!mineral_target) {
+				break;
+			}
+			Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
+			break;
+		}
+
+		default: {
+			break;
+		}
+	
 	}
 }
+
 
 void BasicSc2Bot::OnRoboticsFacilityIdle(const Unit* unit) {
 	if (CountUnitType(UNIT_TYPEID::PROTOSS_WARPPRISM) < unit_limits["warp_prism"]) {
