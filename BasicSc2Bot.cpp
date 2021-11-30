@@ -316,7 +316,7 @@ void BasicSc2Bot::onDarkTemplarIdle(const Unit* unit) {
 	}
 	else{
 		auto base = Observation()->GetGameInfo().enemy_start_locations.front();
-		Point2D loc = Point2D(unit->pos.x + base.x, unit->pos.y + base.y);
+		Point2D loc = Point2D((unit->pos.x + base.x)/2.0, (unit->pos.y + base.y)/2.0);
 		Actions()->UnitCommand(unit,ABILITY_ID::MOVE_MOVE, loc);
 	}
 }
