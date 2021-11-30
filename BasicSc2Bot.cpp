@@ -9,6 +9,7 @@ void BasicSc2Bot::OnGameStart() {
 	scouting_system.Init(Observation(), Actions());
 	defense_system.Init(Observation(), Actions());
 
+	InitData();
 	InitWarpInLocation();
 
 	return;
@@ -19,28 +20,44 @@ void BasicSc2Bot::OnStep() {
 	scouting_system.ScoutingStep();
 	defense_system.DefenseStep();
 
-	// If we have less than 24 supply used, do opener things.
-	int food_used = Observation()->GetFoodUsed();
-	if (InBasicOpener(food_used))
+	TryBuildPylon();
+	CheckHarvesterStatus();
+
+	// If we have less than a certain threshold of supply used, do opener things.
+	if (InBasicOpener())
 	{
-		TryBuildWallPylon();
 		TryBuildGeyser();
 		TryBuildExpo();
 		TryBuildCyber();
 		TryBuildFirstGateway();
-		TryBuildCliffPylon();
 		TryBuildRoboticsFacility();
-		CheckHarvesterStatus();
 	}
 	return;
 }
 
-bool BasicSc2Bot::TryBuildWallPylon()
-{
-	const ObservationInterface* observation = Observation();
+void BasicSc2Bot::InitData() {
+	supply_thresholds = {
+		{"basic_opener", 40},
+		{"pylon", 8},
+		{"geyser", 15},
+		{"gateway", 14},
+		{"robotics_facility", 20}
+	};
 
-	// builds our first pylon at 14 supply.
-	if (observation->GetFoodCap() > 16 && observation->GetFoodUsed() > 19)
+	unit_limits = {
+		{"assimilator", 2},
+		{"cybernetics_core", 1},
+		{"gateway", 1},
+		{"adept", 3},
+		{"robotics_facility", 1},
+		{"warp_prism", 1}
+	};
+}
+
+bool BasicSc2Bot::TryBuildPylon()
+{
+	if (Observation()->GetFoodCap() - Observation()->GetFoodUsed() < supply_thresholds["pylon"]
+		&& Observation()->GetFoodUsed() <= 200)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_PYLON, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_PYLON);
 	}
@@ -50,7 +67,8 @@ bool BasicSc2Bot::TryBuildWallPylon()
 
 bool BasicSc2Bot::TryBuildGeyser()
 {
-	if (Observation()->GetFoodWorkers() > 15 && CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < 2)
+	if (Observation()->GetFoodWorkers() > supply_thresholds["geyser"]
+		&& CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < unit_limits["assimilator"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_ASSIMILATOR, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ASSIMILATOR);
 	}
@@ -65,7 +83,8 @@ bool BasicSc2Bot::TryBuildExpo()
 
 bool BasicSc2Bot::TryBuildCyber()
 {
-	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) > 0 && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) == 0)
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) > 0
+		&& CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) < unit_limits["cybernetics_core"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_CYBERNETICSCORE, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_CYBERNETICSCORE);
 	}
@@ -75,7 +94,8 @@ bool BasicSc2Bot::TryBuildCyber()
 
 bool BasicSc2Bot::TryBuildFirstGateway()
 {
-	if (Observation()->GetFoodUsed() > 14 && CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) == 0)
+	if (Observation()->GetFoodUsed() > supply_thresholds["gateway"]
+		&& CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < unit_limits["gateway"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_GATEWAY);
 	}
@@ -83,21 +103,10 @@ bool BasicSc2Bot::TryBuildFirstGateway()
 	return false;
 }
 
-bool BasicSc2Bot::TryBuildCliffPylon()
-{
-	const ObservationInterface* observation = Observation();
-
-	// builds our first pylon at 14 supply.
-	if (observation->GetFoodCap() < 16 && observation->GetFoodUsed() > 13)
-	{
-		return TryBuildStructure(ABILITY_ID::BUILD_PYLON, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_PYLON);
-	}
-	return false;
-}
-
 bool BasicSc2Bot::TryBuildRoboticsFacility()
 {
-	if (Observation()->GetFoodUsed() > 20 && CountUnitType(UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY) == 0)
+	if (Observation()->GetFoodUsed() > supply_thresholds["robotics_facility"]
+		&& CountUnitType(UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY) < unit_limits["robotics_facility"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_ROBOTICSFACILITY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY);
 	}
@@ -105,9 +114,9 @@ bool BasicSc2Bot::TryBuildRoboticsFacility()
 	return false;
 }
 
-bool BasicSc2Bot::InBasicOpener(int food_used) const
+bool BasicSc2Bot::InBasicOpener()
 {
-	if (food_used < 40)
+	if (Observation()->GetFoodUsed() < supply_thresholds["basic_opener"])
 	{
 		return true;
 	}
@@ -202,14 +211,12 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 		}
 
 		case UNIT_TYPEID::PROTOSS_GATEWAY: {
-			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < 3)
+			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < unit_limits["adept"])
 			{
 				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
 				
 			}
-
 			break;
-
 		}
 									 
 		case UNIT_TYPEID::PROTOSS_CYBERNETICSCORE: {
@@ -245,7 +252,7 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 
 
 void BasicSc2Bot::OnRoboticsFacilityIdle(const Unit* unit) {
-	if (CountUnitType(UNIT_TYPEID::PROTOSS_WARPPRISM) < 1) {
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_WARPPRISM) < unit_limits["warp_prism"]) {
 		Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_WARPPRISM);
 	}
 }

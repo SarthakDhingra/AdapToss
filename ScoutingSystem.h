@@ -30,6 +30,6 @@ private:
 	std::map<std::string, bool> scouting_data;
 
 	// Keep track of what the supply threshold is for some early decisions
-	std::map<std::string, size_t> early_scouting_thresholds;
+	std::map<std::string, int> early_scouting_thresholds;
 };
 
