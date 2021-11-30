@@ -29,7 +29,9 @@ void BasicSc2Bot::OnStep() {
 		TryBuildGeyser();
 		TryBuildExpo();
 		TryBuildCyber();
-		TryBuildFirstGateway();
+		TryBuildGateway();
+		TryBuildTwilight();
+		TryBuildDarkshrine();
 		TryBuildRoboticsFacility();
 	}
 	return;
@@ -41,16 +43,19 @@ void BasicSc2Bot::InitData() {
 		{"pylon", 8},
 		{"geyser", 15},
 		{"gateway", 14},
-		{"robotics_facility", 20}
+		{"robotics_facility", 20},
+		{"twilight_council", 45},
+		{"dark_shrine",31},
 	};
 
 	unit_limits = {
 		{"assimilator", 2},
 		{"cybernetics_core", 1},
-		{"gateway", 1},
 		{"adept", 3},
 		{"robotics_facility", 1},
-		{"warp_prism", 1}
+		{"warp_prism", 1},
+		{"twilight_council", 1},
+		{"dark_shrine", 1},
 	};
 }
 
@@ -100,10 +105,35 @@ bool BasicSc2Bot::TryBuildCyber()
 	return false;
 }
 
-bool BasicSc2Bot::TryBuildFirstGateway()
+bool BasicSc2Bot::TryBuildTwilight()
 {
-	if (Observation()->GetFoodUsed() > supply_thresholds["gateway"]
-		&& CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < unit_limits["gateway"])
+	if (Observation()->GetFoodUsed() > supply_thresholds["twilight_council"]
+	    && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) > 0
+		&& CountUnitType(UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL) < unit_limits["twilight_council"])
+	{
+		return TryBuildStructure(ABILITY_ID::BUILD_TWILIGHTCOUNCIL, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL);
+	}
+
+	return false;
+}
+
+bool BasicSc2Bot::TryBuildDarkshrine()
+{
+	if (Observation()->GetFoodUsed() > supply_thresholds["dark_shrine"]
+	    && CountUnitType(UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL) > 0
+		&& CountUnitType(UNIT_TYPEID::PROTOSS_DARKSHRINE) < unit_limits["dark_shrine"])
+	{
+		return TryBuildStructure(ABILITY_ID::BUILD_DARKSHRINE, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_DARKSHRINE);
+	}
+
+	return false;
+}
+
+
+
+bool BasicSc2Bot::TryBuildGateway()
+{
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < Observation()->GetFoodUsed()/supply_thresholds["gateway"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_GATEWAY);
 	}
