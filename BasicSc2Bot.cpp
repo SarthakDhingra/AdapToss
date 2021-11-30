@@ -44,8 +44,8 @@ void BasicSc2Bot::InitData() {
 		{"geyser", 15},
 		{"gateway", 14},
 		{"robotics_facility", 20},
-		{"twilight_council", 45},
-		{"dark_shrine",31},
+		{"twilight_council", 25},
+		{"dark_shrine", 31},
 	};
 
 	unit_limits = {
@@ -128,8 +128,6 @@ bool BasicSc2Bot::TryBuildDarkshrine()
 
 	return false;
 }
-
-
 
 bool BasicSc2Bot::TryBuildGateway()
 {
@@ -287,7 +285,6 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 	
 	}
 }
-
 
 void BasicSc2Bot::OnRoboticsFacilityIdle(const Unit* unit) {
 	if (CountUnitType(UNIT_TYPEID::PROTOSS_WARPPRISM) < unit_limits["warp_prism"]) {
