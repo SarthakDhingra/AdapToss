@@ -259,6 +259,11 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 			break;
 		}
 
+		case UNIT_TYPEID::PROTOSS_DARKTEMPLAR: {
+			onDarkTemplarIdle(unit);
+			break;
+		}
+
 		case UNIT_TYPEID::PROTOSS_WARPPRISM: {
 			OnWarpPrismIdle(unit);
 			break;
@@ -287,6 +292,26 @@ void BasicSc2Bot::OnRoboticsFacilityIdle(const Unit* unit) {
 	}
 }
 
+void BasicSc2Bot::onDarkTemplarIdle(const Unit* unit) {
+	Units enemies = Observation()->GetUnits(Unit::Alliance::Enemy);
+	if (enemies.size() > 0){
+		size_t closest = 0;
+		float dist = std::numeric_limits<float>::max();
+		for (int i = 0; i < enemies.size(); i++){
+			auto d = Distance3D(unit->pos,enemies[i]->pos);
+			if (d < dist){
+				dist = d;
+				closest = i;
+			}
+		}
+		Actions()->UnitCommand(unit, ABILITY_ID::ATTACK, enemies[closest]->pos);
+	}
+	else{
+		auto base = Observation()->GetGameInfo().enemy_start_locations.front();
+		Point2D loc = Point2D(unit->pos.x + base.x, unit->pos.y + base.y);
+		Actions()->UnitCommand(unit,ABILITY_ID::MOVE_MOVE, loc);
+	}
+}
 void BasicSc2Bot::OnWarpPrismIdle(const Unit* unit) {
 	// moves warp prism to a location offset from the direct path between bases
 	if (Point2DI(unit->pos) != Point2DI(warp_in_position)) {

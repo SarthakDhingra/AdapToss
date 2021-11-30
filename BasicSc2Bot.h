@@ -37,7 +37,7 @@ public:
 	bool TryBuildDarkshrine();
 	void OnRoboticsFacilityIdle(const Unit* unit);
 	void OnWarpPrismIdle(const Unit* unit);
-
+	void onDarkTemplarIdle(const Unit* unit);
 	void InitWarpInLocation();
 	void InitData();
 
