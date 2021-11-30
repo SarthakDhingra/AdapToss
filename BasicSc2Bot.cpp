@@ -40,9 +40,7 @@ void BasicSc2Bot::OnStep() {
 void BasicSc2Bot::InitData() {
 	supply_thresholds = {
 		{"basic_opener", 40},
-		{"pylon", 8},
 		{"geyser", 15},
-		{"gateway", 14},
 		{"robotics_facility", 20},
 		{"twilight_council", 25},
 		{"dark_shrine", 31},
@@ -57,11 +55,18 @@ void BasicSc2Bot::InitData() {
 		{"twilight_council", 1},
 		{"dark_shrine", 1},
 	};
+
+	supply_scaling = {
+		{"pylon", 8},
+		{"gateway", 14},
+		{"nexus", 16},
+		{"dark_templar", 3}
+	};
 }
 
 bool BasicSc2Bot::TryBuildPylon()
 {
-	if (Observation()->GetFoodCap() - Observation()->GetFoodUsed() < supply_thresholds["pylon"]
+	if (Observation()->GetFoodCap() - Observation()->GetFoodUsed() < supply_scaling["pylon"]
 		&& Observation()->GetFoodUsed() <= 200)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_PYLON, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_PYLON);
@@ -87,7 +92,7 @@ bool BasicSc2Bot::TryBuildExpo()
 	int nexus_count = CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS);
 
 	// builds a nexus whenever we have no nexus, or if the food to nexus ratio is too high
-	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > 16 + (3 * nexus_count))
+	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > supply_scaling["nexus"] + (3 * nexus_count))
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_NEXUS, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_NEXUS);
 	}
@@ -131,7 +136,7 @@ bool BasicSc2Bot::TryBuildDarkshrine()
 
 bool BasicSc2Bot::TryBuildGateway()
 {
-	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < Observation()->GetFoodUsed()/supply_thresholds["gateway"])
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < Observation()->GetFoodUsed() / supply_scaling["gateway"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_GATEWAY);
 	}
@@ -247,11 +252,12 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 		}
 
 		case UNIT_TYPEID::PROTOSS_GATEWAY: {
-			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < unit_limits["adept"])
-			{
-				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
-				
-			}
+			OnGatewayIdle(unit);
+			break;
+		}
+		
+		case UNIT_TYPEID::PROTOSS_WARPGATE: {
+			OnWarpGateIdle(unit);
 			break;
 		}
 									 
@@ -283,6 +289,49 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 			break;
 		}
 	
+	}
+}
+
+void BasicSc2Bot::OnGatewayIdle(const Unit* unit) {
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < unit_limits["adept"])
+	{
+		Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
+	}
+}
+
+void BasicSc2Bot::OnWarpGateIdle(const Unit* unit) {
+	// get forward warp-in position
+	
+	// get random warp-in position
+	float rx = GetRandomScalar();
+	float ry = GetRandomScalar();
+
+	// look for warp gate
+	
+	// warp in at random power source by default
+	int ri = GetRandomInteger(0, Observation()->GetPowerSources().size() - 1);
+	PowerSource warp_in_source = Observation()->GetPowerSources()[ri];
+
+	// warp in at prism if found
+	Units units = Observation()->GetUnits(Unit::Alliance::Self);
+	for (const auto& unit : units) {
+		if (unit->unit_type == UNIT_TYPEID::PROTOSS_WARPPRISMPHASING) {
+			Tag tag = unit->tag;
+			for (const auto& power_source : Observation()->GetPowerSources()) {
+				if (power_source.tag == tag) {
+					warp_in_source = power_source;
+					break;
+				}
+			}
+			break;
+		}
+	}
+	
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_DARKTEMPLAR) < Observation()->GetFoodUsed() / supply_scaling["dark_templar"])
+	{
+		Actions()->UnitCommand(unit,
+			ABILITY_ID::TRAINWARP_DARKTEMPLAR,
+			Point2D(warp_in_source.position.x + rx * warp_in_source.radius, warp_in_source.position.y + ry * warp_in_source.radius));
 	}
 }
 

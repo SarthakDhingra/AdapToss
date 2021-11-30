@@ -35,6 +35,9 @@ public:
 	bool TryBuildRoboticsFacility();
 	bool TryBuildTwilight();
 	bool TryBuildDarkshrine();
+
+	void OnGatewayIdle(const Unit* unit);
+	void OnWarpGateIdle(const Unit* unit);
 	void OnRoboticsFacilityIdle(const Unit* unit);
 	void OnWarpPrismIdle(const Unit* unit);
 
@@ -50,6 +53,7 @@ private:
 
 	std::map<std::string, int> supply_thresholds;
 	std::map<std::string, int> unit_limits;
+	std::map<std::string, int> supply_scaling;
 };
 
 #endif
