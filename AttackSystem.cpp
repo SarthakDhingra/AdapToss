@@ -10,6 +10,7 @@ void AttackSystem::Init(const ObservationInterface* obs, ActionInterface* act) {
 	observation = obs;
 	actions = act;
 
+	// Initialize target to enemy base location to start
 	target = observation->GetGameInfo().enemy_start_locations.front();
 }
 
@@ -54,7 +55,6 @@ void AttackSystem::SetTarget() {
 
 	return;
 }
-
 
 size_t AttackSystem::CountUnitType(UNIT_TYPEID unit_type) {
 	return observation->GetUnits(Unit::Alliance::Self, IsUnit(unit_type)).size();

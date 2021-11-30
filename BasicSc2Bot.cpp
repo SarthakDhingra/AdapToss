@@ -302,13 +302,9 @@ void BasicSc2Bot::OnGatewayIdle(const Unit* unit) {
 }
 
 void BasicSc2Bot::OnWarpGateIdle(const Unit* unit) {
-	// get forward warp-in position
-	
-	// get random warp-in position
+	// get random warp-in position adjustment
 	float rx = GetRandomScalar();
 	float ry = GetRandomScalar();
-
-	// look for warp gate
 	
 	// warp in at random power source by default
 	int ri = GetRandomInteger(0, Observation()->GetPowerSources().size() - 1);
