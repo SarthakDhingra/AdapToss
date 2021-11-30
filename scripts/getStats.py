@@ -8,3 +8,11 @@ def runGame():
 
 if __name__ == "__main__":
     runGame()
+
+
+# TODO
+# - run all combinations (all difficulties, all maps, all enemy races)
+# have log which indicates who won
+# parse output to determine who won
+# determine what the stats will be tweaking
+# have CLI arguments for these things
