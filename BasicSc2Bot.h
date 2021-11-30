@@ -33,7 +33,7 @@ public:
 	bool TryBuildCyber();
 	bool TryBuildFirstGateway();
 	bool TryBuildRoboticsFacility();
-
+	bool TryBuildTwilight();
 	void OnRoboticsFacilityIdle(const Unit* unit);
 	void OnWarpPrismIdle(const Unit* unit);
 
