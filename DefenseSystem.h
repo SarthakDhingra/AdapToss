@@ -10,7 +10,7 @@ public:
 	void DefenseStep();
 	void SetDefense();
 	void SendDefense();
-	size_t DefenseSystem::CountUnitType(UNIT_TYPEID unit_type);
+	size_t CountUnitType(UNIT_TYPEID unit_type);
 
 private:
 	Units defense;
