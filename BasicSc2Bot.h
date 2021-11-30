@@ -31,9 +31,10 @@ public:
 	bool TryBuildGeyser();
 	bool TryBuildExpo();
 	bool TryBuildCyber();
-	bool TryBuildFirstGateway();
+	bool TryBuildGateway();
 	bool TryBuildRoboticsFacility();
 	bool TryBuildTwilight();
+	bool TryBuildDarkshrine();
 	void OnRoboticsFacilityIdle(const Unit* unit);
 	void OnWarpPrismIdle(const Unit* unit);
 
