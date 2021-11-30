@@ -8,6 +8,7 @@ using namespace sc2;
 void BasicSc2Bot::OnGameStart() {
 	scouting_system.Init(Observation(), Actions());
 	defense_system.Init(Observation(), Actions());
+	attack_system.Init(Observation(), Actions());
 
 	InitData();
 	InitWarpInLocation();
@@ -19,6 +20,7 @@ void BasicSc2Bot::OnStep() {
 
 	scouting_system.ScoutingStep();
 	defense_system.DefenseStep();
+	attack_system.AttackStep();
 
 	TryBuildPylon();
 	CheckHarvesterStatus();
