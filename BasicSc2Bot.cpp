@@ -49,7 +49,6 @@ void BasicSc2Bot::InitData() {
 		{"cybernetics_core", 1},
 		{"gateway", 1},
 		{"adept", 3},
-		{"zealot", 1},
 		{"robotics_facility", 1},
 		{"warp_prism", 1}
 	};
@@ -216,10 +215,6 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 			{
 				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
 				
-			}
-			if (CountUnitType(UNIT_TYPEID::PROTOSS_ZEALOT) < unit_limits["zealot"])
-			{
-				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ZEALOT);
 			}
 			break;
 		}
