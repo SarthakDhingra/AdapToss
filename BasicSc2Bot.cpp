@@ -83,6 +83,14 @@ bool BasicSc2Bot::TryBuildGeyser()
 bool BasicSc2Bot::TryBuildExpo()
 {
 	// todo: code this. It isn't going to be simple lol :p
+	const ObservationInterface* observation = Observation();
+	int nexus_count = CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS);
+
+	// builds a nexus whenever we have no nexus, or if the food to nexus ratio is too high
+	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > 16 + (3 * nexus_count))
+	{
+		return TryBuildStructure(ABILITY_ID::BUILD_NEXUS, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_NEXUS);
+	}
 	return false;
 }
 
@@ -486,6 +494,127 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 				}
 			}
 		}
+	}
+	else if (structure_type == UNIT_TYPEID::PROTOSS_NEXUS)
+	{
+		Units poss_geysers = observation->GetUnits(Unit::Alliance(3));		// gets neutral units
+		Units poss_nexi = observation->GetUnits(Unit::Alliance(1));			// gets friendly units
+		Units nexi;
+		float closest_expo_gas_dist = 1000000000000000000;
+		float poss_distance;
+		Tag closest_geyser_tag = 0;
+		for (const auto& poss_nex : poss_nexi)								// puts all friendly nexi into nexi. Used for finding nearby geysers.
+		{
+			if (poss_nex->unit_type == UNIT_TYPEID::PROTOSS_NEXUS)
+			{
+				nexi.push_back(poss_nex);
+			}
+		}
+		std::vector<UNIT_TYPEID> gas_ids;
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER);
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_RICHVESPENEGEYSER);
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PURIFIERVESPENEGEYSER);
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PROTOSSVESPENEGEYSER);
+		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER);
+		for (const auto& poss_geyser : poss_geysers)
+		{
+			for (UNIT_TYPEID gas_id : gas_ids)
+			{
+				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
+				{
+					for (const auto& poss_nex : nexi)
+					{
+						poss_distance = SqDist(poss_nex, poss_geyser);
+						if (poss_distance > 110)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+						{
+							if (poss_distance < closest_expo_gas_dist)
+							{
+								closest_expo_gas_dist = poss_distance;
+								closest_geyser_tag = poss_geyser->tag;
+							}
+						}
+					}
+					if (nexi.empty()) // build near closest geyser to worker. handles no nexus situations
+					{
+						poss_distance = SqDist(unit_to_build, poss_geyser);
+						if (poss_distance < closest_expo_gas_dist)
+						{
+							closest_expo_gas_dist = poss_distance;
+							closest_geyser_tag = poss_geyser->tag;
+						}
+					}
+				}
+			}
+		}
+
+		if (closest_geyser_tag)
+		{
+			poss_distance = 100000000000000000;
+			closest_expo_gas_dist = 10000000000;
+			const Unit* geyser = observation->GetUnit(closest_geyser_tag);
+
+			// gets nearest geyser to geyser
+			for (const auto& poss_geyser : poss_geysers)
+			{
+				if (poss_geyser->tag != geyser->tag)
+				{
+					for (UNIT_TYPEID gas_id : gas_ids)
+					{
+						if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
+						{
+							poss_distance = SqDist(geyser, poss_geyser);
+							if (poss_distance < closest_expo_gas_dist)
+							{
+								closest_expo_gas_dist = poss_distance;
+								closest_geyser_tag = poss_geyser->tag;
+							}
+							
+						}
+					}
+				}
+			}
+
+			const Unit* geyser2 = observation->GetUnit(closest_geyser_tag);
+			float midx = (geyser->pos.x + geyser2->pos.x) / 2.0;
+			float midy = (geyser->pos.y + geyser2->pos.y) / 2.0;
+			float x, y, dist1;
+			float possx, possy;
+			bool spot_found = false;
+			while (!spot_found)
+			{
+				rx = GetRandomScalar();
+				ry = GetRandomScalar();
+				possx = midx + rx * 2.0f;
+				possy = midy + ry * 2.0f;
+
+				
+				x = (possx - geyser->pos.x);
+				x *= x;
+				y = (possy - geyser->pos.y);
+				y *= y;
+				dist1 = x + y;
+
+				x = (possx - geyser2->pos.x);
+				x *= x;
+				y = (possy - geyser2->pos.y);
+				y *= y;
+				dist1 -= (x + y);
+
+				if (dist1 < 1.0 && dist1 > -1.0)
+				{
+					spot_found = true;
+				}
+				
+			}
+
+
+			Actions()->UnitCommand(unit_to_build,
+				ability_type_for_structure,
+				Point2D(possx, possy));
+			return true;
+		}
+		return false;
 	}
 	else
 	{
