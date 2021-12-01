@@ -221,6 +221,8 @@ bool BasicSc2Bot::InDominationMode()
 		dom_mode = true;
 		return true;
 	}
+	//allow switch off of dom mode in case we get hit hard
+	dom_mode = false;
 	return false;
 }
 size_t BasicSc2Bot::CountUnitType(UNIT_TYPEID unit_type) {
