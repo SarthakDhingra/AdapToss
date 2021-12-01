@@ -33,6 +33,6 @@ private:
 	// Keep track of what the supply threshold is for some early decisions
 	std::map<std::string, int> early_scouting_thresholds;
 
-	bool toggle = false;
+	bool toggle_on = true;
 };
 
