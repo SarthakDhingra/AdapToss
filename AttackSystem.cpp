@@ -5,13 +5,11 @@
 
 using namespace sc2;
 
-void AttackSystem::Init(const ObservationInterface* obs, ActionInterface* act) {
+void AttackSystem::Init(const ObservationInterface* obs, ActionInterface* act, std::vector<Point3D> locs){
 	// Attacking system needs to be initialized on game start rather than at construction
 	observation = obs;
 	actions = act;
-
-	// Initialize target to enemy base location to start
-	target = observation->GetGameInfo().enemy_start_locations.front();
+	exp_locs = locs;
 }
 
 void AttackSystem::AttackStep() {
@@ -20,14 +18,14 @@ void AttackSystem::AttackStep() {
 }
 
 void AttackSystem::SetAttackUnits() {
-	// Offense should be filled with all dark templar available for now
-	if (attack_units.size() != CountUnitType(UNIT_TYPEID::PROTOSS_DARKTEMPLAR)) {
+	// Offense should be filled with all dark templar and void rays available for now
+	if (attack_units.size() != CountUnitType(UNIT_TYPEID::PROTOSS_DARKTEMPLAR) + CountUnitType(UNIT_TYPEID::PROTOSS_VOIDRAY)) {
 
 		attack_units.clear();
 
 		Units units = observation->GetUnits(Unit::Alliance::Self);
 		for (const auto& unit : units) {
-			if (unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_DARKTEMPLAR) {
+			if (unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_DARKTEMPLAR || unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_VOIDRAY) {
 				attack_units.push_back(unit);
 			}
 		}
@@ -42,18 +40,35 @@ void AttackSystem::SendAttackUnits() {
 		return;
 	}
 
-	// Send attack units to target
+	// Send attack units to target, if no target, let it go idle so it is sent into scouting mode
 	for (const auto& unit : attack_units) {
-		actions->UnitCommand(unit, ABILITY_ID::ATTACK, target);
+		auto target =  getTarget(unit);
+		if (target.x != observation->GetGameInfo().width + 10){
+			actions->UnitCommand(unit, ABILITY_ID::ATTACK, target);
+		}
 	}
 
 	return;
 }
 
-void AttackSystem::SetTarget() {
-	// Adjust target for attack units to try and attack
+Point3D AttackSystem::getTarget(const Unit * unit) {
+	// Get closest enemy to this unit for it to attack
+	Units enemies = observation->GetUnits(Unit::Alliance::Enemy);
+ 	if (enemies.size() > 0){
+ 		size_t closest = 0;
+ 		float dist = std::numeric_limits<float>::max();
+ 		for (int i = 0; i < enemies.size(); i++){
+ 			auto d = Distance3D(unit->pos,enemies[i]->pos);
+ 			if (d < dist){
+ 				dist = d;
+ 				closest = i;
+ 			}
+ 		}
+ 		return enemies[closest]->pos;
+ 	}
 
-	return;
+
+	return Point3D(observation->GetGameInfo().width + 10, 0, 0);
 }
 
 size_t AttackSystem::CountUnitType(UNIT_TYPEID unit_type) {

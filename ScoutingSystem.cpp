@@ -5,40 +5,26 @@
 
 using namespace sc2;
 
-void ScoutingSystem::Init(const ObservationInterface* obs, ActionInterface* act) {
+void ScoutingSystem::Init(const ObservationInterface* obs, ActionInterface* act, std::vector<Point3D> locs) {
 	// Scouting system needs to be initialized on game start rather than at construction
 	observation = obs;
 	actions = act;
-
+	exp_loc = locs;
 	enemy_race = observation->GetGameInfo().player_info[1].race_requested;
 
 	InitScoutingData();
 }
 
 void ScoutingSystem::InitScoutingData() {	
-	//get gas spots
-	std::vector<UNIT_TYPEID> gas_ids;
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER);
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_RICHVESPENEGEYSER);
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PURIFIERVESPENEGEYSER);
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PROTOSSVESPENEGEYSER);
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER);
-	
-	//find all neutral units (includes resources), go through them to find locations of gases
-	//these cover the mains and the expansions
-	Units poss_geysers = observation->GetUnits(Unit::Alliance::Neutral);		// gets neutral units
-	for (const auto& poss_geyser : poss_geysers)
-		{
-			for (UNIT_TYPEID gas_id : gas_ids)
-			{
-				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
-				{
-					exp_loc.push_back(poss_geyser->pos);
-				}
-			}
-		}
 	// TODO - tune early scouting values so they meaningfully represent the game state
+
+	const GameInfo& game_info = observation->GetGameInfo();
+	//range is 6, get all positions that are 6 away, diagonals not considered for ease
+	for (float x = game_info.playable_min.x; x < game_info.playable_max.x; x += 6.0f){
+		for (float y = game_info.playable_min.y; y < game_info.playable_max.y; y += 6.0f){
+			scout_locs.push(Point2D(x,y));
+		}
+	}
 	early_scouting_thresholds = {
 		{"early_game", 30},
 		{"gas", 10},
@@ -88,7 +74,7 @@ void ScoutingSystem::SetScout() {
 	return;
 }
 
-void ScoutingSystem::SendScout(const Unit * unit) {
+void ScoutingSystem::SendScout(const Unit * unit, bool dom_mode) {
 	//set up so we can take a unit as a parameter in optionally
 	auto scout_unit = scout;
 	if (unit){
@@ -111,11 +97,29 @@ void ScoutingSystem::SendScout(const Unit * unit) {
 			return;
 		}
 	}
+	if (unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_DARKTEMPLAR && dom_mode){
+		//taken from bot_examples.cc
 
-	//send scout 
-	actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, exp_loc[pos]);
-	//increment to next expansion location
-	pos = (pos + 1) % exp_loc.size();
+		//get played region size
+		float playable_w = game_info.playable_max.x - game_info.playable_min.x;
+    	float playable_h = game_info.playable_max.y - game_info.playable_min.y;
+		
+		//go some fraction of the playable space
+		auto t_x = playable_w * GetRandomFraction() + game_info.playable_min.x;
+		auto t_y = playable_h * GetRandomFraction() + game_info.playable_min.y;
+		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, Point2D(t_x,t_y));
+	}
+	else if (unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_VOIDRAY && dom_mode) {
+		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, scout_locs.front());
+		scout_locs.pop();
+	}
+	else{
+		//send scout 
+		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, exp_loc[pos]);
+		//increment to next expansion location
+		pos = (pos + 1) % exp_loc.size();
+	}
+
 	return;
 }
 

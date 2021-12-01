@@ -52,7 +52,7 @@ private:
 	ScoutingSystem scouting_system;
 	DefenseSystem defense_system;
 	AttackSystem attack_system;
-	
+	std::vector<Point3D> exp_loc;
 	Point2D warp_in_position;
 	bool dom_mode = false;
 	double approach_increment;

@@ -6,18 +6,18 @@
 using namespace sc2;
 
 void BasicSc2Bot::OnGameStart() {
-	scouting_system.Init(Observation(), Actions());
-	defense_system.Init(Observation(), Actions());
-	attack_system.Init(Observation(), Actions());
+	
 
 	InitData();
 	InitWarpInLocation();
 
+	scouting_system.Init(Observation(), Actions(),exp_loc);
+	defense_system.Init(Observation(), Actions());
+	attack_system.Init(Observation(), Actions(), exp_loc);
 	return;
 }
 
 void BasicSc2Bot::OnStep() {
-
 	scouting_system.ScoutingStep();
 	defense_system.DefenseStep();
 	attack_system.AttackStep();
@@ -47,9 +47,32 @@ void BasicSc2Bot::InitData() {
 	//how close we get to the base with DTs
 	approach_increment = 2.0;
 
+	//get gas spots
+	std::vector<UNIT_TYPEID> gas_ids;
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_RICHVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PURIFIERVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PROTOSSVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER);
+	
+	//find all neutral units (includes resources), go through them to find locations of gases
+	//these cover the mains and the expansions
+	Units poss_geysers = Observation()->GetUnits(Unit::Alliance::Neutral);		// gets neutral units
+	for (const auto& poss_geyser : poss_geysers)
+		{
+			for (UNIT_TYPEID gas_id : gas_ids)
+			{
+				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
+				{
+					exp_loc.push_back(poss_geyser->pos);
+				}
+			}
+		}
+
 	supply_thresholds = {
 		{"basic_opener", 40},
-		{"domination_mode",100},
+		{"domination_mode",41},
 		{"pylon", 8},
 		{"geyser", 15},
 		{"robotics_facility", 20},
@@ -193,7 +216,7 @@ bool BasicSc2Bot::InDominationMode()
 {
 	//if we are later in the game and no enemies, then we must have wiped the main ones out
 	if (Observation()->GetFoodUsed() > supply_thresholds["domination_mode"] && 
-	Observation()->GetUnits(Unit::Alliance::Enemy).empty)
+	Observation()->GetUnits(Unit::Alliance::Enemy).empty())
 	{
 		dom_mode = true;
 		return true;
@@ -287,7 +310,12 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 			break;
 		}
 		case UNIT_TYPEID::PROTOSS_STARGATE: {
-			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PHOENIX);
+			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_VOIDRAY);
+			break;
+		}
+		case UNIT_TYPEID::PROTOSS_VOIDRAY: {
+			scouting_system.SendScout(unit,dom_mode);
+			break;
 		}
 		case UNIT_TYPEID::PROTOSS_GATEWAY: {
 			OnGatewayIdle(unit);
@@ -309,7 +337,7 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 			break;
 		}
 		case UNIT_TYPEID::PROTOSS_DARKTEMPLAR: {
-			scouting_system.SendScout(unit, dom_mode);
+			scouting_system.SendScout(unit,dom_mode);
 			break;
 		}
 
