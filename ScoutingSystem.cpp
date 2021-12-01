@@ -33,6 +33,11 @@ void ScoutingSystem::InitScoutingData() {
 }
 
 void ScoutingSystem::ScoutingStep() {
+	// early out if system is turned off
+	if (!toggle) {
+		return;
+	}
+	
 	SetScout();
 	SendScout();
 
