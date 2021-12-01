@@ -41,7 +41,7 @@ void ScoutingSystem::InitScoutingData() {
 
 void ScoutingSystem::ScoutingStep() {
 	// early out if system is turned off
-	if (!toggle) {
+	if (!toggle_on) {
 		return;
 	}
 	
@@ -59,6 +59,7 @@ void ScoutingSystem::ScoutingStep() {
 }
 
 void ScoutingSystem::SetScout() {
+
 	// Early out if there's currently a scout
 	if (scout && scout->is_alive) {
 		return;
@@ -67,6 +68,7 @@ void ScoutingSystem::SetScout() {
 	Units units = observation->GetUnits(Unit::Alliance::Self);
 	for (const auto& unit : units) {
 		if (unit->unit_type.ToType() == scout_type) {
+
 			scout = unit;
 			return;
 		}
@@ -99,7 +101,7 @@ void ScoutingSystem::SendScout(const Unit * unit, bool dom_mode) {
 	}
 
 	//move randomly
-	if (unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_DARKTEMPLAR && dom_mode){
+	if (scout_unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_DARKTEMPLAR && dom_mode){
 		//taken from bot_examples.cc
 
 		//get played region size
@@ -112,17 +114,21 @@ void ScoutingSystem::SendScout(const Unit * unit, bool dom_mode) {
 		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, Point2D(t_x,t_y));
 	}
 	//do a coordinated sweep around the map
-	else if (unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_VOIDRAY && dom_mode) {
+	else if (scout_unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_VOIDRAY && dom_mode) {
 		auto top = scout_locs.front();
 		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, scout_locs.front());
 		scout_locs.pop();
 		scout_locs.push(top);
 	}
-	else{
-		//send scout 
+	else if (tasks.count(scout_unit) == 0 || Distance2D(scout_unit->pos, exp_loc[tasks[scout_unit]]) < 6.0f){
+		//check if our scout already has a task or if close enough to reassign
+		//send scout
 		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, exp_loc[pos]);
+		//when giving a task store that in the map
+		tasks[scout_unit] = pos;
 		//increment to next expansion location
 		pos = (pos + 1) % exp_loc.size();
+		
 	}
 
 	return;

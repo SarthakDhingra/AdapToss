@@ -32,7 +32,7 @@ private:
 	std::queue<Point2D> scout_locs;
 	// Keep track of what the supply threshold is for some early decisions
 	std::map<std::string, int> early_scouting_thresholds;
-
-	bool toggle = false;
+	std::map<const Unit *, int> tasks;
+	bool toggle_on = true;
 };
 
