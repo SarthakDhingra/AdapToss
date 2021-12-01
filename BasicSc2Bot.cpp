@@ -14,6 +14,8 @@ void BasicSc2Bot::OnGameStart() {
 	scouting_system.Init(Observation(), Actions(),exp_loc);
 	defense_system.Init(Observation(), Actions());
 	attack_system.Init(Observation(), Actions(), exp_loc);
+	slander_system.Init(Observation(), Actions());
+
 	return;
 }
 
@@ -21,7 +23,8 @@ void BasicSc2Bot::OnStep() {
 	scouting_system.ScoutingStep();
 	defense_system.DefenseStep();
 	attack_system.AttackStep();
-
+	slander_system.SlanderStep();
+	
 	TryBuildPylon();
 	CheckHarvesterStatus();
 
