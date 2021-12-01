@@ -97,6 +97,8 @@ void ScoutingSystem::SendScout(const Unit * unit, bool dom_mode) {
 			return;
 		}
 	}
+
+	//move randomly
 	if (unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_DARKTEMPLAR && dom_mode){
 		//taken from bot_examples.cc
 
@@ -109,6 +111,7 @@ void ScoutingSystem::SendScout(const Unit * unit, bool dom_mode) {
 		auto t_y = playable_h * GetRandomFraction() + game_info.playable_min.y;
 		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, Point2D(t_x,t_y));
 	}
+	//do a coordinated sweep around the map
 	else if (unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_VOIDRAY && dom_mode) {
 		auto top = scout_locs.front();
 		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, scout_locs.front());
