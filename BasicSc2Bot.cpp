@@ -34,12 +34,20 @@ void BasicSc2Bot::OnStep() {
 		TryBuildDarkshrine();
 		TryBuildRoboticsFacility();
 	}
+	//if we have cleared out the map later in the game
+	if (InDominationMode()){
+		TryBuildStargate();
+	}
 	return;
 }
 
 void BasicSc2Bot::InitData() {
+	//how close we get to the base with DTs
+	approach_increment = 2.0;
+
 	supply_thresholds = {
 		{"basic_opener", 40},
+		{"domination_mode",100},
 		{"pylon", 8},
 		{"geyser", 15},
 		{"gateway", 14},
@@ -56,6 +64,7 @@ void BasicSc2Bot::InitData() {
 		{"warp_prism", 1},
 		{"twilight_council", 1},
 		{"dark_shrine", 1},
+		{"stargate",1},
 	};
 }
 
@@ -117,6 +126,19 @@ bool BasicSc2Bot::TryBuildTwilight()
 	return false;
 }
 
+bool BasicSc2Bot::TryBuildStargate()
+{
+	//build cyber core first, otherwise if we are under limit build a stargate 
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) == 0){
+		TryBuildCyber();
+		return false;
+	}
+	else if (CountUnitType(UNIT_TYPEID::PROTOSS_STARGATE) < unit_limits["stargate"]){
+		return TryBuildStructure(ABILITY_ID::BUILD_STARGATE, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_STARGATE);
+	}
+	return false;
+}
+
 bool BasicSc2Bot::TryBuildDarkshrine()
 {
 	if (Observation()->GetFoodUsed() > supply_thresholds["dark_shrine"]
@@ -161,6 +183,17 @@ bool BasicSc2Bot::InBasicOpener()
 	return false;
 }
 
+bool BasicSc2Bot::InDominationMode()
+{
+	//if we are later in the game and no enemies, then we must have wiped the main ones out
+	if (Observation()->GetFoodUsed() > supply_thresholds["domination_mode"] && 
+	Observation()->GetUnits(Unit::Alliance::Enemy).empty)
+	{
+		dom_mode = true;
+		return true;
+	}
+	return false;
+}
 size_t BasicSc2Bot::CountUnitType(UNIT_TYPEID unit_type) {
 	return Observation()->GetUnits(Unit::Alliance::Self, IsUnit(unit_type)).size();
 }
@@ -247,7 +280,9 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 
 			break;
 		}
-
+		case UNIT_TYPEID::PROTOSS_STARGATE: {
+			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PHOENIX);
+		}
 		case UNIT_TYPEID::PROTOSS_GATEWAY: {
 			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < unit_limits["adept"])
 			{
@@ -266,9 +301,8 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 			OnRoboticsFacilityIdle(unit);
 			break;
 		}
-
 		case UNIT_TYPEID::PROTOSS_DARKTEMPLAR: {
-			onDarkTemplarIdle(unit);
+			scouting_system.SendScout(unit, dom_mode);
 			break;
 		}
 
@@ -300,26 +334,6 @@ void BasicSc2Bot::OnRoboticsFacilityIdle(const Unit* unit) {
 	}
 }
 
-void BasicSc2Bot::onDarkTemplarIdle(const Unit* unit) {
-	Units enemies = Observation()->GetUnits(Unit::Alliance::Enemy);
-	if (enemies.size() > 0){
-		size_t closest = 0;
-		float dist = std::numeric_limits<float>::max();
-		for (int i = 0; i < enemies.size(); i++){
-			auto d = Distance3D(unit->pos,enemies[i]->pos);
-			if (d < dist){
-				dist = d;
-				closest = i;
-			}
-		}
-		Actions()->UnitCommand(unit, ABILITY_ID::ATTACK, enemies[closest]->pos);
-	}
-	else{
-		auto base = Observation()->GetGameInfo().enemy_start_locations.front();
-		Point2D loc = Point2D((unit->pos.x + base.x)/2.0, (unit->pos.y + base.y)/2.0);
-		Actions()->UnitCommand(unit,ABILITY_ID::MOVE_MOVE, loc);
-	}
-}
 void BasicSc2Bot::OnWarpPrismIdle(const Unit* unit) {
 	// moves warp prism to a location offset from the direct path between bases
 	if (Point2DI(unit->pos) != Point2DI(warp_in_position)) {

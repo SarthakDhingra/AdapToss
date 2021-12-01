@@ -37,17 +37,18 @@ public:
 	bool TryBuildDarkshrine();
 	void OnRoboticsFacilityIdle(const Unit* unit);
 	void OnWarpPrismIdle(const Unit* unit);
-	void onDarkTemplarIdle(const Unit* unit);
 	void InitWarpInLocation();
+	bool InDominationMode();
+	bool TryBuildStargate();
 	void InitData();
-
 
 
 private:
 	ScoutingSystem scouting_system;
 	DefenseSystem defense_system;
 	Point2D warp_in_position;
-
+	bool dom_mode = false;
+	double approach_increment;
 	std::map<std::string, int> supply_thresholds;
 	std::map<std::string, int> unit_limits;
 };

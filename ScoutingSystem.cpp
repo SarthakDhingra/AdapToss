@@ -1,6 +1,6 @@
 #include <iostream>
 #include <sc2api/sc2_unit_filters.h>
-
+#include <vector>
 #include "ScoutingSystem.h"
 
 using namespace sc2;
@@ -16,7 +16,28 @@ void ScoutingSystem::Init(const ObservationInterface* obs, ActionInterface* act)
 }
 
 void ScoutingSystem::InitScoutingData() {	
+	//get gas spots
+	std::vector<UNIT_TYPEID> gas_ids;
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_RICHVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PURIFIERVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PROTOSSVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER);
 	
+	//find all neutral units (includes resources), go through them to find locations of gases
+	//these cover the mains and the expansions
+	Units poss_geysers = observation->GetUnits(Unit::Alliance::Neutral);		// gets neutral units
+	for (const auto& poss_geyser : poss_geysers)
+		{
+			for (UNIT_TYPEID gas_id : gas_ids)
+			{
+				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
+				{
+					exp_loc.push_back(poss_geyser->pos);
+				}
+			}
+		}
 	// TODO - tune early scouting values so they meaningfully represent the game state
 	early_scouting_thresholds = {
 		{"early_game", 30},
@@ -62,9 +83,14 @@ void ScoutingSystem::SetScout() {
 	return;
 }
 
-void ScoutingSystem::SendScout() {
+void ScoutingSystem::SendScout(const Unit * unit) {
+	//set up so we can take a unit as a parameter in optionally
+	auto scout_unit = scout;
+	if (unit){
+		scout_unit = unit;
+	}
 	// Return if no scout is set
-	if (!scout) {
+	if (!scout_unit) {
 		return;
 	}
 
@@ -81,9 +107,10 @@ void ScoutingSystem::SendScout() {
 		}
 	}
 
-	// Send scout to enemy base
-	actions->UnitCommand(scout, ABILITY_ID::MOVE_MOVE, game_info.enemy_start_locations.front());
-
+	//send scout 
+	actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, exp_loc[pos]);
+	//increment to next expansion location
+	pos = (pos + 1) % exp_loc.size();
 	return;
 }
 
