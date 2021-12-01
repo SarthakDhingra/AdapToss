@@ -24,11 +24,16 @@ void SlanderSystem::Init(const ObservationInterface* obs, ActionInterface* act){
     time = std::chrono::system_clock::now();
 }
 
+//can be used to add slander whenever (end game slander for example)
 void SlanderSystem::addSlander(std::string msg){
     slander.push(msg);
 }
-
+//send slander immediately if need be
+void SlanderSystem::immediateSlander(std::string msg){
+    actions->SendChat(msg);
+}
 void SlanderSystem::SlanderStep(){
+    //if we have something to say and the count down has ended, send a message and then recycle it to the back of the queue
     if (!slander.empty() 
     && (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - time).count()) > delay){
         time = std::chrono::system_clock::now();
