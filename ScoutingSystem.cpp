@@ -110,8 +110,10 @@ void ScoutingSystem::SendScout(const Unit * unit, bool dom_mode) {
 		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, Point2D(t_x,t_y));
 	}
 	else if (unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_VOIDRAY && dom_mode) {
+		auto top = scout_locs.front();
 		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, scout_locs.front());
 		scout_locs.pop();
+		scout_locs.push(top);
 	}
 	else{
 		//send scout 
