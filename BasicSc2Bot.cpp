@@ -69,6 +69,7 @@ void BasicSc2Bot::InitData() {
 				}
 			}
 		}
+		std::cout << exp_loc.size() << std::endl;
 
 	supply_thresholds = {
 		{"basic_opener", 40},
