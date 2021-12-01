@@ -121,13 +121,13 @@ void ScoutingSystem::SendScout(const Unit * unit, bool dom_mode) {
 		scout_locs.push(top);
 	}
 	else if (tasks.count(scout_unit) == 0 || Distance2D(scout_unit->pos, exp_loc[tasks[scout_unit]]) < 6.0f){
-		//send scout 
+		//check if our scout already has a task or if close enough to reassign
+		//send scout
 		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, exp_loc[pos]);
+		//when giving a task store that in the map
 		tasks[scout_unit] = pos;
 		//increment to next expansion location
-		std::cout << pos << std::endl;
 		pos = (pos + 1) % exp_loc.size();
-		std::cout << pos << std::endl;
 		
 	}
 
