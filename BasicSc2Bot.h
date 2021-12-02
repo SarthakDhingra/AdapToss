@@ -6,8 +6,10 @@
 #include "sc2lib/sc2_lib.h"
 #include "sc2utils/sc2_manage_process.h"
 #include "sc2utils/sc2_arg_parser.h"
+
 #include "ScoutingSystem.h"
 #include "DefenseSystem.h"
+#include "AttackSystem.h"
 
 using namespace sc2;
 
@@ -35,21 +37,28 @@ public:
 	bool TryBuildRoboticsFacility();
 	bool TryBuildTwilight();
 	bool TryBuildDarkshrine();
+
+	void OnGatewayIdle(const Unit* unit);
+	void OnWarpGateIdle(const Unit* unit);
 	void OnRoboticsFacilityIdle(const Unit* unit);
 	void OnWarpPrismIdle(const Unit* unit);
-
 	void InitWarpInLocation();
+	bool InDominationMode();
+	bool TryBuildStargate();
 	void InitData();
-
 
 
 private:
 	ScoutingSystem scouting_system;
 	DefenseSystem defense_system;
+	AttackSystem attack_system;
+	std::vector<Point3D> exp_loc;
 	Point2D warp_in_position;
-
+	bool dom_mode = false;
+	double approach_increment;
 	std::map<std::string, int> supply_thresholds;
 	std::map<std::string, int> unit_limits;
+	std::map<std::string, int> supply_scaling;
 };
 
 #endif

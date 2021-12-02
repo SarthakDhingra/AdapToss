@@ -1,23 +1,30 @@
 #include <iostream>
 #include <sc2api/sc2_unit_filters.h>
-
+#include <vector>
 #include "ScoutingSystem.h"
 
 using namespace sc2;
 
-void ScoutingSystem::Init(const ObservationInterface* obs, ActionInterface* act) {
+void ScoutingSystem::Init(const ObservationInterface* obs, ActionInterface* act, std::vector<Point3D> locs) {
 	// Scouting system needs to be initialized on game start rather than at construction
 	observation = obs;
 	actions = act;
-
+	exp_loc = locs;
 	enemy_race = observation->GetGameInfo().player_info[1].race_requested;
 
 	InitScoutingData();
 }
 
 void ScoutingSystem::InitScoutingData() {	
-	
 	// TODO - tune early scouting values so they meaningfully represent the game state
+
+	const GameInfo& game_info = observation->GetGameInfo();
+	//range is 6, get all positions that are 6 away, diagonals not considered for ease
+	for (float x = game_info.playable_min.x; x < game_info.playable_max.x; x += 6.0f){
+		for (float y = game_info.playable_min.y; y < game_info.playable_max.y; y += 6.0f){
+			scout_locs.push(Point2D(x,y));
+		}
+	}
 	early_scouting_thresholds = {
 		{"early_game", 30},
 		{"gas", 10},
@@ -33,6 +40,11 @@ void ScoutingSystem::InitScoutingData() {
 }
 
 void ScoutingSystem::ScoutingStep() {
+	// early out if system is turned off
+	if (!toggle_on) {
+		return;
+	}
+	
 	SetScout();
 	SendScout();
 
@@ -47,6 +59,7 @@ void ScoutingSystem::ScoutingStep() {
 }
 
 void ScoutingSystem::SetScout() {
+
 	// Early out if there's currently a scout
 	if (scout && scout->is_alive) {
 		return;
@@ -55,6 +68,7 @@ void ScoutingSystem::SetScout() {
 	Units units = observation->GetUnits(Unit::Alliance::Self);
 	for (const auto& unit : units) {
 		if (unit->unit_type.ToType() == scout_type) {
+
 			scout = unit;
 			return;
 		}
@@ -62,9 +76,14 @@ void ScoutingSystem::SetScout() {
 	return;
 }
 
-void ScoutingSystem::SendScout() {
+void ScoutingSystem::SendScout(const Unit * unit, bool dom_mode) {
+	//set up so we can take a unit as a parameter in optionally
+	auto scout_unit = scout;
+	if (unit){
+		scout_unit = unit;
+	}
 	// Return if no scout is set
-	if (!scout) {
+	if (!scout_unit) {
 		return;
 	}
 
@@ -81,8 +100,36 @@ void ScoutingSystem::SendScout() {
 		}
 	}
 
-	// Send scout to enemy base
-	actions->UnitCommand(scout, ABILITY_ID::MOVE_MOVE, game_info.enemy_start_locations.front());
+	//move randomly
+	if (scout_unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_DARKTEMPLAR && dom_mode){
+		//taken from bot_examples.cc
+
+		//get played region size
+		float playable_w = game_info.playable_max.x - game_info.playable_min.x;
+    	float playable_h = game_info.playable_max.y - game_info.playable_min.y;
+		
+		//go some fraction of the playable space
+		auto t_x = playable_w * GetRandomFraction() + game_info.playable_min.x;
+		auto t_y = playable_h * GetRandomFraction() + game_info.playable_min.y;
+		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, Point2D(t_x,t_y));
+	}
+	//do a coordinated sweep around the map
+	else if (scout_unit->unit_type.ToType() == UNIT_TYPEID::PROTOSS_VOIDRAY && dom_mode) {
+		auto top = scout_locs.front();
+		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, scout_locs.front());
+		scout_locs.pop();
+		scout_locs.push(top);
+	}
+	else if (tasks.count(scout_unit) == 0 || Distance2D(scout_unit->pos, exp_loc[tasks[scout_unit]]) < 6.0f){
+		//check if our scout already has a task or if close enough to reassign
+		//send scout
+		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, exp_loc[pos]);
+		//when giving a task store that in the map
+		tasks[scout_unit] = pos;
+		//increment to next expansion location
+		pos = (pos + 1) % exp_loc.size();
+		
+	}
 
 	return;
 }

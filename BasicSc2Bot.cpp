@@ -6,19 +6,21 @@
 using namespace sc2;
 
 void BasicSc2Bot::OnGameStart() {
-	scouting_system.Init(Observation(), Actions());
-	defense_system.Init(Observation(), Actions());
+	
 
 	InitData();
 	InitWarpInLocation();
 
+	scouting_system.Init(Observation(), Actions(),exp_loc);
+	defense_system.Init(Observation(), Actions());
+	attack_system.Init(Observation(), Actions(), exp_loc);
 	return;
 }
 
 void BasicSc2Bot::OnStep() {
-
 	scouting_system.ScoutingStep();
 	defense_system.DefenseStep();
+	attack_system.AttackStep();
 
 	TryBuildPylon();
 	CheckHarvesterStatus();
@@ -34,18 +36,49 @@ void BasicSc2Bot::OnStep() {
 		TryBuildDarkshrine();
 		TryBuildRoboticsFacility();
 	}
+	//if we have cleared out the map later in the game
+	if (InDominationMode()){
+		TryBuildStargate();
+	}
 	return;
 }
 
 void BasicSc2Bot::InitData() {
+	//how close we get to the base with DTs
+	approach_increment = 2.0;
+
+	//get gas spots
+	std::vector<UNIT_TYPEID> gas_ids;
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_RICHVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PURIFIERVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PROTOSSVESPENEGEYSER);
+	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER);
+	
+	//find all neutral units (includes resources), go through them to find locations of gases
+	//these cover the mains and the expansions
+	Units poss_geysers = Observation()->GetUnits(Unit::Alliance::Neutral);		// gets neutral units
+	for (const auto& poss_geyser : poss_geysers)
+		{
+			for (UNIT_TYPEID gas_id : gas_ids)
+			{
+				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
+				{
+					exp_loc.push_back(poss_geyser->pos);
+				}
+			}
+		}
+		std::cout << exp_loc.size() << std::endl;
+
 	supply_thresholds = {
 		{"basic_opener", 40},
+		{"domination_mode",41},
 		{"pylon", 8},
 		{"geyser", 15},
-		{"gateway", 14},
 		{"robotics_facility", 20},
-		{"twilight_council", 45},
-		{"dark_shrine",31},
+		{"twilight_council", 25},
+		{"dark_shrine", 31},
 	};
 
 	unit_limits = {
@@ -56,12 +89,20 @@ void BasicSc2Bot::InitData() {
 		{"warp_prism", 1},
 		{"twilight_council", 1},
 		{"dark_shrine", 1},
+		{"stargate",1},
+	};
+
+	supply_scaling = {
+		{"pylon", 8},
+		{"gateway", 14},
+		{"nexus", 16},
+		{"dark_templar", 3}
 	};
 }
 
 bool BasicSc2Bot::TryBuildPylon()
 {
-	if (Observation()->GetFoodCap() - Observation()->GetFoodUsed() < supply_thresholds["pylon"]
+	if (Observation()->GetFoodCap() - Observation()->GetFoodUsed() < supply_scaling["pylon"]
 		&& Observation()->GetFoodUsed() <= 200)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_PYLON, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_PYLON);
@@ -87,7 +128,7 @@ bool BasicSc2Bot::TryBuildExpo()
 	int nexus_count = CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS);
 
 	// builds a nexus whenever we have no nexus, or if the food to nexus ratio is too high
-	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > 16 + (3 * nexus_count))
+	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > supply_scaling["nexus"] + (3 * nexus_count))
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_NEXUS, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_NEXUS);
 	}
@@ -117,6 +158,19 @@ bool BasicSc2Bot::TryBuildTwilight()
 	return false;
 }
 
+bool BasicSc2Bot::TryBuildStargate()
+{
+	//build cyber core first, otherwise if we are under limit build a stargate 
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) == 0){
+		TryBuildCyber();
+		return false;
+	}
+	else if (CountUnitType(UNIT_TYPEID::PROTOSS_STARGATE) < unit_limits["stargate"]){
+		return TryBuildStructure(ABILITY_ID::BUILD_STARGATE, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_STARGATE);
+	}
+	return false;
+}
+
 bool BasicSc2Bot::TryBuildDarkshrine()
 {
 	if (Observation()->GetFoodUsed() > supply_thresholds["dark_shrine"]
@@ -129,11 +183,9 @@ bool BasicSc2Bot::TryBuildDarkshrine()
 	return false;
 }
 
-
-
 bool BasicSc2Bot::TryBuildGateway()
 {
-	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < Observation()->GetFoodUsed()/supply_thresholds["gateway"])
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < Observation()->GetFoodUsed() / supply_scaling["gateway"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_GATEWAY);
 	}
@@ -161,6 +213,19 @@ bool BasicSc2Bot::InBasicOpener()
 	return false;
 }
 
+bool BasicSc2Bot::InDominationMode()
+{
+	//if we are later in the game and no enemies, then we must have wiped the main ones out
+	if (Observation()->GetFoodUsed() > supply_thresholds["domination_mode"] && 
+	Observation()->GetUnits(Unit::Alliance::Enemy).empty())
+	{
+		dom_mode = true;
+		return true;
+	}
+	//allow switch off of dom mode in case we get hit hard
+	dom_mode = false;
+	return false;
+}
 size_t BasicSc2Bot::CountUnitType(UNIT_TYPEID unit_type) {
 	return Observation()->GetUnits(Unit::Alliance::Self, IsUnit(unit_type)).size();
 }
@@ -247,13 +312,21 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 
 			break;
 		}
-
+		case UNIT_TYPEID::PROTOSS_STARGATE: {
+			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_VOIDRAY);
+			break;
+		}
+		case UNIT_TYPEID::PROTOSS_VOIDRAY: {
+			scouting_system.SendScout(unit,dom_mode);
+			break;
+		}
 		case UNIT_TYPEID::PROTOSS_GATEWAY: {
-			if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < unit_limits["adept"])
-			{
-				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
-				
-			}
+			OnGatewayIdle(unit);
+			break;
+		}
+		
+		case UNIT_TYPEID::PROTOSS_WARPGATE: {
+			OnWarpGateIdle(unit);
 			break;
 		}
 									 
@@ -264,6 +337,10 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 
 		case UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY: {
 			OnRoboticsFacilityIdle(unit);
+			break;
+		}
+		case UNIT_TYPEID::PROTOSS_DARKTEMPLAR: {
+			scouting_system.SendScout(unit,dom_mode);
 			break;
 		}
 
@@ -288,6 +365,44 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 	}
 }
 
+void BasicSc2Bot::OnGatewayIdle(const Unit* unit) {
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < unit_limits["adept"])
+	{
+		Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
+	}
+}
+
+void BasicSc2Bot::OnWarpGateIdle(const Unit* unit) {
+	// get random warp-in position adjustment
+	float rx = GetRandomScalar();
+	float ry = GetRandomScalar();
+	
+	// warp in at random power source by default
+	int ri = GetRandomInteger(0, Observation()->GetPowerSources().size() - 1);
+	PowerSource warp_in_source = Observation()->GetPowerSources()[ri];
+
+	// warp in at prism if found
+	Units units = Observation()->GetUnits(Unit::Alliance::Self);
+	for (const auto& unit : units) {
+		if (unit->unit_type == UNIT_TYPEID::PROTOSS_WARPPRISMPHASING) {
+			Tag tag = unit->tag;
+			for (const auto& power_source : Observation()->GetPowerSources()) {
+				if (power_source.tag == tag) {
+					warp_in_source = power_source;
+					break;
+				}
+			}
+			break;
+		}
+	}
+	
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_DARKTEMPLAR) < Observation()->GetFoodUsed() / supply_scaling["dark_templar"])
+	{
+		Actions()->UnitCommand(unit,
+			ABILITY_ID::TRAINWARP_DARKTEMPLAR,
+			Point2D(warp_in_source.position.x + rx * warp_in_source.radius, warp_in_source.position.y + ry * warp_in_source.radius));
+	}
+}
 
 void BasicSc2Bot::OnRoboticsFacilityIdle(const Unit* unit) {
 	if (CountUnitType(UNIT_TYPEID::PROTOSS_WARPPRISM) < unit_limits["warp_prism"]) {
