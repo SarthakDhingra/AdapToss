@@ -56,8 +56,8 @@ void DefenseSystem::SendDefense() {
 
 		// Attack enemy with all defenders
 		if (d < attack_radius) {
-			for (const auto& d : defense) {
-				actions->UnitCommand(d, ABILITY_ID::ATTACK, e->pos);
+			for (const auto& defender : defense) {
+				actions->UnitCommand(defender, ABILITY_ID::ATTACK, e->pos);
 			}
 		}
 	}

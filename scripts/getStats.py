@@ -4,7 +4,7 @@ import subprocess
 
 def runGame():
     result = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", "zerg", "-d", "Hard", "-m", "CactusValleyLE.SC2Map"], stdout=subprocess.PIPE)
-    print(result)
+    print(result.stdout)
 
 if __name__ == "__main__":
     runGame()
