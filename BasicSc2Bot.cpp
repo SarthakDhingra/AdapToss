@@ -523,7 +523,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 
 
 
-		if (unit->unit_type == unit_type) {
+		if (unit->unit_type == unit_type && (unit->orders.empty() || (unit->orders[0].ability_id != ABILITY_ID::MOVE_MOVE))){
 			unit_to_build = unit;
 		}
 	}
