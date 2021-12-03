@@ -131,7 +131,7 @@ bool BasicSc2Bot::TryBuildExpo()
 	int nexus_count = CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS);
 
 	// builds a nexus whenever we have no nexus, or if the food to nexus ratio is too high
-	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > supply_scaling["nexus"] + (3 * nexus_count) || observation->GetMinerals() > 1200)
+	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > (float) (supply_scaling["nexus"] + (3 * nexus_count)) || observation->GetMinerals() > 800)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_NEXUS, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_NEXUS);
 	}
@@ -151,8 +151,8 @@ bool BasicSc2Bot::TryBuildCyber()
 
 bool BasicSc2Bot::TryBuildTwilight()
 {
-	if (Observation()->GetFoodUsed() > supply_thresholds["twilight_council"]
-	    && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) > 0
+	if (//Observation()->GetFoodUsed() > supply_thresholds["twilight_council"]
+	    CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) > 0
 		&& CountUnitType(UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL) < unit_limits["twilight_council"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_TWILIGHTCOUNCIL, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL);
@@ -176,8 +176,8 @@ bool BasicSc2Bot::TryBuildStargate()
 
 bool BasicSc2Bot::TryBuildDarkshrine()
 {
-	if (Observation()->GetFoodUsed() > supply_thresholds["dark_shrine"]
-	    && CountUnitType(UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL) > 0
+	if (//Observation()->GetFoodUsed() > supply_thresholds["dark_shrine"]
+	    CountUnitType(UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL) > 0
 		&& CountUnitType(UNIT_TYPEID::PROTOSS_DARKSHRINE) < unit_limits["dark_shrine"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_DARKSHRINE, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_DARKSHRINE);
@@ -188,7 +188,7 @@ bool BasicSc2Bot::TryBuildDarkshrine()
 
 bool BasicSc2Bot::TryBuildGateway()
 {
-	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < Observation()->GetFoodUsed() / supply_scaling["gateway"])
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < Observation()->GetFoodUsed() / supply_scaling["gateway"] || Observation()->GetMinerals() > 1200)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_GATEWAY);
 	}
@@ -198,7 +198,7 @@ bool BasicSc2Bot::TryBuildGateway()
 
 bool BasicSc2Bot::TryBuildRoboticsFacility()
 {
-	if (Observation()->GetFoodUsed() > supply_thresholds["robotics_facility"]
+	if (false && Observation()->GetFoodUsed() > supply_thresholds["robotics_facility"]
 		&& CountUnitType(UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY) < unit_limits["robotics_facility"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_ROBOTICSFACILITY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ROBOTICSFACILITY);
@@ -369,7 +369,7 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 }
 
 void BasicSc2Bot::OnGatewayIdle(const Unit* unit) {
-	if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < unit_limits["adept"])
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_ADEPT) < unit_limits["adept"] || Observation()->GetMinerals() > 1200)
 	{
 		Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_ADEPT);
 	}
@@ -570,9 +570,9 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
 				{
 					bool close_to_nexus = false;
-					for (const auto& poss_nex : nexi)
+					for (const auto& nexus : nexi)
 					{
-						if (SqDist(poss_nex, poss_geyser) < 110)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+						if (SqDist(nexus, poss_geyser) < 70)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
 						{
 							close_to_nexus = true;
 						}
@@ -593,9 +593,10 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 		Units poss_geysers = observation->GetUnits(Unit::Alliance(3));		// gets neutral units
 		Units poss_nexi = observation->GetUnits(Unit::Alliance(1));			// gets friendly units
 		Units nexi;
-		float closest_expo_gas_dist = 1000000000000000000;
+		bool expo_taken;
+		float closest_expo_gas_dist = 100000000000000000, local_closest_gas_dist = 1000000000000000000;
 		float poss_distance;
-		Tag closest_geyser_tag = 0;
+		Tag closest_geyser_tag = 0, local_closest_geyser_tag = 0;
 		for (const auto& poss_nex : poss_nexi)								// puts all friendly nexi into nexi. Used for finding nearby geysers.
 		{
 			if (poss_nex->unit_type == UNIT_TYPEID::PROTOSS_NEXUS)
@@ -616,17 +617,28 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 			{
 				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
 				{
-					for (const auto& poss_nex : nexi)
+					expo_taken = false;
+					local_closest_gas_dist = 1000000000000000000;
+					for (const auto& nexus : nexi)
 					{
-						poss_distance = SqDist(poss_nex, poss_geyser);
-						if (poss_distance > 110)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+						poss_distance = SqDist(nexus, poss_geyser);
+						if (poss_distance > 70)		// makes sure geyser isn't near a taken expansion. Only loops once per gas_id
 						{
-							if (poss_distance < closest_expo_gas_dist)
+							if (poss_distance < local_closest_gas_dist)
 							{
-								closest_expo_gas_dist = poss_distance;
-								closest_geyser_tag = poss_geyser->tag;
+								local_closest_gas_dist = poss_distance;
+								local_closest_geyser_tag = poss_geyser->tag;
 							}
 						}
+						else
+						{
+							expo_taken = true;
+						}
+					}
+					if (local_closest_gas_dist < closest_expo_gas_dist && !expo_taken)
+					{
+						closest_expo_gas_dist = local_closest_gas_dist;
+						closest_geyser_tag = local_closest_geyser_tag;
 					}
 					if (nexi.empty()) // build near closest geyser to worker. handles no nexus situations
 					{
@@ -640,6 +652,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 				}
 			}
 		}
+		
 
 		if (closest_geyser_tag)
 		{
@@ -671,9 +684,82 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 			const Unit* geyser2 = observation->GetUnit(closest_geyser_tag);
 			float midx = (geyser->pos.x + geyser2->pos.x) / 2.0;
 			float midy = (geyser->pos.y + geyser2->pos.y) / 2.0;
+
+			float difx;
+			float dify;
+			float placement_dist;
+			float walk = 1;
+			int step = 0;
+
+			bool spot_found = false;
+			while (!spot_found)
+			{
+				const Unit* closest_minerals = FindNearestMineralPatch(Point2D(midx, midy));
+				difx = midx - closest_minerals->pos.x;
+				dify = midy - closest_minerals->pos.y;
+				placement_dist = (difx * difx) + (dify * dify);
+				if (placement_dist > 45)
+				{
+					spot_found = true;
+				}
+				else
+				{
+					switch (step) {
+						case 0: {
+							midx += walk;
+							break;
+						}
+						case 1: {
+							midy += walk;
+							break;
+						}
+						case 2: {
+							midx -= walk;
+							break;
+						}
+						case 3: {
+							midx -= walk;
+							break;
+						}
+						case 4: {
+							midy -= walk;
+							break;
+						}
+						case 5: {
+							midy -= walk;
+							break;
+						}
+						case 6: {
+							midx += walk;
+							break;
+						}
+						case 7: {
+							midx += walk;
+							break;
+						}
+						case 8: {				// back to origin
+							midy -= walk;
+							midx -= walk;
+							break;
+						}
+						case 9: {
+							walk += 1;
+							step = 0;
+							break;
+						}
+					}
+				}
+			}
+
+			Actions()->UnitCommand(unit_to_build,
+				ability_type_for_structure,
+				Point2D(midx, midy));
+			return true;
+
+
 			float x, y, dist1;
 			float possx, possy;
-			bool spot_found = false;
+			spot_found = false;
 			while (!spot_found)
 			{
 				rx = GetRandomScalar();
