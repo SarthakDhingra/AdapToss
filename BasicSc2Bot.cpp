@@ -117,7 +117,7 @@ bool BasicSc2Bot::TryBuildPylon()
 bool BasicSc2Bot::TryBuildGeyser()
 {
 	if (Observation()->GetFoodWorkers() > supply_thresholds["geyser"]
-		&& CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < unit_limits["assimilator"])
+		&& CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < unit_limits["assimilator"] * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_ASSIMILATOR, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ASSIMILATOR);
 	}
@@ -131,7 +131,7 @@ bool BasicSc2Bot::TryBuildExpo()
 	int nexus_count = CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS);
 
 	// builds a nexus whenever we have no nexus, or if the food to nexus ratio is too high
-	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > supply_scaling["nexus"] + (3 * nexus_count))
+	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > supply_scaling["nexus"] + (3 * nexus_count) || observation->GetMinerals() > 1000)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_NEXUS, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_NEXUS);
 	}
