@@ -16,6 +16,7 @@ using namespace sc2;
 class BasicSc2Bot : public sc2::Agent {
 public:
 	virtual void OnGameStart() final;
+	virtual void OnGameEnd() final;
 	virtual void OnStep() final;
 	virtual void OnUnitIdle(const Unit* unit) final;
 	bool TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type = UNIT_TYPEID::PROTOSS_PROBE);
