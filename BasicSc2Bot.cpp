@@ -572,7 +572,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 					bool close_to_nexus = false;
 					for (const auto& poss_nex : nexi)
 					{
-						if (SqDist(poss_nex, poss_geyser) < 110)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+						if (SqDist(poss_nex, poss_geyser) < 70)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
 						{
 							close_to_nexus = true;
 						}
@@ -669,8 +669,28 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 			}
 
 			const Unit* geyser2 = observation->GetUnit(closest_geyser_tag);
+			Units resources;
+			resources.push_back(geyser);
+			resources.push_back(geyser2);
 			float midx = (geyser->pos.x + geyser2->pos.x) / 2.0;
 			float midy = (geyser->pos.y + geyser2->pos.y) / 2.0;
+			float x, y, dist1, xdif, ydif;
+			for (const Unit* possMineral : poss_geysers)
+			{
+				if (possMineral->mineral_contents)
+				{
+					xdif = midx - possMineral->pos.x;
+					ydif = midy - possMineral->pos.y;
+					dist1 = (xdif * xdif) + (ydif * ydif);
+					if (dist1 < 90)
+					{
+						resources.push_back(possMineral);
+					}
+				}
+			}
+
+
+
 			float x, y, dist1;
 			float possx, possy;
 			bool spot_found = false;
