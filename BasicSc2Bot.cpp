@@ -13,6 +13,7 @@ void BasicSc2Bot::OnGameStart() {
 	scouting_system.Init(Observation(), Actions(),exp_loc);
 	defense_system.Init(Observation(), Actions());
 	attack_system.Init(Observation(), Actions(), exp_loc);
+	slander_system.Init(Observation(), Actions());
 
 	return;
 }
@@ -44,7 +45,7 @@ void BasicSc2Bot::OnGameEnd() {
 		std::cout << "Player " << results[i].player_id << " result: " << result << std::endl;
 		
 	}
-
+	
 	return;
 }
 
@@ -57,7 +58,8 @@ void BasicSc2Bot::OnStep() {
 	scouting_system.ScoutingStep();
 	defense_system.DefenseStep();
 	attack_system.AttackStep();
-
+	slander_system.SlanderStep();
+	
 	TryBuildPylon();
 	CheckHarvesterStatus();
 
@@ -150,7 +152,7 @@ bool BasicSc2Bot::TryBuildPylon()
 bool BasicSc2Bot::TryBuildGeyser()
 {
 	if (Observation()->GetFoodWorkers() > supply_thresholds["geyser"]
-		&& CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < unit_limits["assimilator"])
+		&& CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < unit_limits["assimilator"] * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_ASSIMILATOR, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ASSIMILATOR);
 	}
@@ -164,7 +166,7 @@ bool BasicSc2Bot::TryBuildExpo()
 	int nexus_count = CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS);
 
 	// builds a nexus whenever we have no nexus, or if the food to nexus ratio is too high
-	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > supply_scaling["nexus"] + (3 * nexus_count))
+	if (nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > supply_scaling["nexus"] + (3 * nexus_count) || observation->GetMinerals() > 1200)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_NEXUS, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_NEXUS);
 	}
@@ -744,6 +746,21 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	}
 	else
 	{
+		for (const Unit * unit : observation->GetUnits(Unit::Alliance(1)))
+		{
+			if (unit->unit_type == UNIT_TYPEID::PROTOSS_WARPPRISM)
+			{
+				for (const PowerSource& powersource : observation->GetPowerSources())
+				{
+
+					if (powersource.tag != unit->tag)
+						Actions()->UnitCommand(unit_to_build,
+							ability_type_for_structure,
+							Point2D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius));
+					return true;
+				}
+			}
+		}
 		for (const PowerSource& powersource : observation->GetPowerSources())
 		{
 			Actions()->UnitCommand(unit_to_build,
@@ -751,6 +768,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 				Point2D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius));
 			return true;
 		}
+		
 	}
 
 	return false;
