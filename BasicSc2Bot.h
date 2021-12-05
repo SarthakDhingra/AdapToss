@@ -25,7 +25,8 @@ public:
 	size_t CountUnitType(UNIT_TYPEID unit_type);
 	bool InBasicOpener();
 	bool AssignProbeToGas(const Unit *geyser);
-	float SqDist(const Unit *a, const Unit *b);
+	float SqDist(const Unit *a, const Unit *b) const;
+	float SqDist(const sc2::Point3D* a, const sc2::Point3D* b) const;
 	bool CheckHarvesterStatus();
 
 	bool TryBuildPylon();
