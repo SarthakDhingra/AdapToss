@@ -65,15 +65,17 @@ void ScoutingSystem::SetScout() {
 		return;
 	}
 	
-	Units units = observation->GetUnits(Unit::Alliance::Self);
+	Units units = observation->GetUnits(Unit::Alliance::Self, IsUnit(scout_type));
 	for (const auto& unit : units) {
-		if (unit->unit_type.ToType() == scout_type) {
-
-			scout = unit;
-			return;
-		}
+		scout = unit;
+		return;
 	}
 	return;
+}
+
+const Unit* ScoutingSystem::Get_Scout() const
+{
+	return scout;
 }
 
 void ScoutingSystem::SendScout(const Unit * unit, bool dom_mode) {

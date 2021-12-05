@@ -62,15 +62,14 @@ void BasicSc2Bot::InitData() {
 	//find all neutral units (includes resources), go through them to find locations of gases
 	//these cover the mains and the expansions
 	Units poss_geysers = Observation()->GetUnits(Unit::Alliance::Neutral);		// gets neutral units
-	for (const auto& poss_geyser : poss_geysers)
+	const GameInfo& game_info = Observation()->GetGameInfo();
+	for (sc2::Point2D sl : game_info.start_locations)
+	{
+		exp_loc.push_back(Point3D(sl.x, sl.y, 1));
+	}
+	for (Point3D exp : search::CalculateExpansionLocations(Observation(), Query()))
 		{
-			for (UNIT_TYPEID gas_id : gas_ids)
-			{
-				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
-				{
-					exp_loc.push_back(poss_geyser->pos);
-				}
-			}
+			exp_loc.push_back(exp);
 		}
 		std::cout << exp_loc.size() << std::endl;
 
@@ -132,7 +131,7 @@ bool BasicSc2Bot::TryBuildExpo()
 
 	// builds a nexus whenever we have no nexus, or if the food to nexus ratio is too high
 	if (observation->GetMinerals() >= 400 && 
-		(nexus_count == 0 || (float)observation->GetFoodUsed() / (float)nexus_count > supply_scaling["nexus"] + (3 * nexus_count) || observation->GetMinerals() > 1200))
+		(nexus_count == 0 || ((float) observation->GetFoodUsed() / (float) nexus_count) > (supply_scaling["nexus"] + (3 * nexus_count)) || observation->GetMinerals() > 1200))
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_NEXUS, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_NEXUS);
 	}
@@ -454,39 +453,6 @@ void BasicSc2Bot::InitWarpInLocation() {
 	warp_in_position = position;
 }
 
-bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type) {
-	const ObservationInterface* observation = Observation();
-
-	// If a unit already is building a supply structure of this type, do nothing.
-	// Also get an scv to build the structure.
-	const Unit* unit_to_build = nullptr;
-	Units units = observation->GetUnits(Unit::Alliance::Self);
-	for (const auto& unit : units) {
-		for (const auto& order : unit->orders) {
-			if (order.ability_id == ability_type_for_structure) {
-				return false;
-			}
-		}
-
-		if (unit->unit_type == unit_type) {
-			unit_to_build = unit;
-		}
-	}
-
-	// if no  unit assigned return false (prevents reading nullptr exception)
-	if (!unit_to_build) {
-		return false;
-	}
-
-	float rx = GetRandomScalar();
-	float ry = GetRandomScalar();
-
-	Actions()->UnitCommand(unit_to_build,
-		ability_type_for_structure,
-		Point2D(unit_to_build->pos.x + rx * 15.0f, unit_to_build->pos.y + ry * 15.0f));
-	return true;
-
-}
 
 // returns the squared distance between two Units
 float BasicSc2Bot::SqDist(const Unit* a, const Unit* b) const
@@ -510,15 +476,52 @@ float BasicSc2Bot::SqDist(const sc2::Point3D* a, const sc2::Point3D* b) const
 	return x + y;
 }
 
+bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type) {
+	const ObservationInterface* observation = Observation();
+	const Unit* scout = scouting_system.Get_Scout();
+
+	// If a unit already is building a supply structure of this type, do nothing.
+	// Also get an scv to build the structure.
+	const Unit* unit_to_build = nullptr;
+	Units units = observation->GetUnits(Unit::Alliance::Self, IsUnit(unit_type));
+	for (const auto& unit : units) {
+		for (const auto& order : unit->orders) {
+			if (order.ability_id == ability_type_for_structure) {
+				return false;
+			}
+		}
+
+		if (unit->tag != scout->tag) {
+			unit_to_build = unit;
+		}
+	}
+
+	// if no  unit assigned return false (prevents reading nullptr exception)
+	if (!unit_to_build) {
+		return false;
+	}
+
+	float rx = GetRandomScalar();
+	float ry = GetRandomScalar();
+
+	Actions()->UnitCommand(unit_to_build,
+		ability_type_for_structure,
+		Point2D(unit_to_build->pos.x + rx * 15.0f, unit_to_build->pos.y + ry * 15.0f));
+	return true;
+
+}
+
+
 
 // version for building only one building.
 bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type, UNIT_TYPEID structure_type) {
 	const ObservationInterface* observation = Observation();
+	const Unit* scout = scouting_system.Get_Scout();
 
 	// If a unit already is building a supply structure of this type, do nothing.
 	// Also get a probe to build the structure.
 	const Unit* unit_to_build = nullptr;
-	Units units = observation->GetUnits(Unit::Alliance::Self);
+	Units units = observation->GetUnits(Unit::Alliance::Self, IsUnit(unit_type));
 	for (const auto& unit : units)
 	{	// checks if we are already building a structure of this type.
 		if (unit->unit_type == structure_type && unit->build_progress < 1.0)
@@ -528,14 +531,13 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	}
 	for (const auto& unit : units) {
 		for (const auto& order : unit->orders) {
-			if (order.ability_id == ability_type_for_structure) {
+			if (order.ability_id == ability_type_for_structure && unit->is_alive) {
 				return false;
 			}
 		}
 
 
-
-		if (unit->unit_type == unit_type) {
+		if (unit->tag != scout->tag && unit->is_alive) {
 			unit_to_build = unit;
 		}
 	}
@@ -624,7 +626,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 
 		for (sc2::Point3D expo : validExpos)
 		{
-			potentialDist = SqDist(&unit_to_build->pos, &closestPoint);
+			potentialDist = SqDist(&unit_to_build->pos, &expo);
 			if (potentialDist < closestDist)
 			{
 				closestDist = potentialDist;
@@ -632,7 +634,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 			}
 		}
 
-
+		observation->GetUnits(Unit::Alliance(1), IsUnit(unit_to_build->unit_type));
 		Actions()->UnitCommand(unit_to_build,
 			ability_type_for_structure,
 			closestPoint);
@@ -642,7 +644,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	{
 		for (const Unit * unit : observation->GetUnits(Unit::Alliance(1)))
 		{
-			if (unit->unit_type == UNIT_TYPEID::PROTOSS_WARPPRISM)
+			if (unit->unit_type == UNIT_TYPEID::PROTOSS_WARPPRISM)				// checks to not build at a warp prism
 			{
 				for (const PowerSource& powersource : observation->GetPowerSources())
 				{

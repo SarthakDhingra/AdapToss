@@ -14,6 +14,7 @@ public:
 	void SendScout(const Unit * unit = nullptr, bool mode = false);
 	void ScoutEarlyRush();
 	void ScoutDetection();
+	const Unit* ScoutingSystem::Get_Scout() const;
 
 private:
 	const ObservationInterface* observation = nullptr;
