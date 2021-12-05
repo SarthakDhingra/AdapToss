@@ -41,9 +41,9 @@ def runSimulations():
         difficulty_results[difficulty] = {"Win":0, "Loss":0, "Tie":0, "Undecided":0}
 
     # run all combinations 
-    for difficulty in DIFFICULTIES:
+    for map in MAPS:
         for race in RACES:
-            for map in MAPS:
+            for difficulty in DIFFICULTIES:
                 # print for ourselves
                 print(f"currently processing enemy: {difficulty} {race} on {map}")
                 # run simulation
