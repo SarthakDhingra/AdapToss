@@ -70,6 +70,7 @@ def parseOutput(stdout):
             index = info.find(":")
             result = info[index+2:]
 
+    print(f"Result = {result}")
     return result
 
 # TODO: generate graphs and tables from results
