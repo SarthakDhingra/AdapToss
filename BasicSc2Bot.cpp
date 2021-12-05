@@ -18,14 +18,18 @@ void BasicSc2Bot::OnGameStart() {
 	return;
 }
 
+
+// for statistics
 void BasicSc2Bot::OnGameEnd() {
 	
-	// for statistics
+	// get results
 	std::vector<PlayerResult> results = Observation()->GetResults();
 	std::string result;
 
+	// print our id
 	std::cout << "Player id: " << Observation()->GetPlayerID() << std::endl;
 
+	// parse different result cases
 	for (int i = 0; i < results.size(); ++i) {
 		switch (results[i].result) {
 			case GameResult::Win:
@@ -42,6 +46,7 @@ void BasicSc2Bot::OnGameEnd() {
 				break;
 		}
 
+		// print player results
 		std::cout << "Player " << results[i].player_id << " result: " << result << std::endl;
 		
 	}
@@ -52,8 +57,6 @@ void BasicSc2Bot::OnGameEnd() {
 
 
 void BasicSc2Bot::OnStep() {
-
-
 
 	scouting_system.ScoutingStep();
 	defense_system.DefenseStep();
