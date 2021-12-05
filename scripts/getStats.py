@@ -4,9 +4,9 @@ import subprocess
 import matplotlib
 import matplotlib.pyplot as plt
 
-MAPS = ["CactusValleyLE.SC2Map", "BelShirVestigeLE.SC2Map", "ProximaStationLE.SC2Map"]
-RACES = ["zerg", "protoss", "terran"]
-DIFFICULTIES = ["Easy", "Medium", "Hard"]
+MAPS = ["CactusValleyLE.SC2Map"]#, "BelShirVestigeLE.SC2Map", "ProximaStationLE.SC2Map"]
+RACES = ["zerg"]# , "protoss", "terran"]
+DIFFICULTIES = ["VeryEasy", "Easy", "Medium", "MediumHard", "Hard", "HardVeryHard", "VeryHard", "CheatVision", "CheatMoney", "CheatInsane"]
 
 def testRun():
     result = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", "zerg", "-d", "Hard", "-m", "BelShirVestigeLE.SC2Map"], stdout=subprocess.PIPE)
@@ -14,32 +14,33 @@ def testRun():
 
 def runSimulations():
 
-    global_results = {"wins":0, "losses":0, "ties":0, "undecided":0}
+    global_results = {"Win":0, "Loss":0, "Tie":0, "Undecided":0}
 
     race_results = {
-        "zerg":{"wins":0, "losses":0, "ties":0, "undecided":0},
-        "protoss":{"wins":0, "losses":0, "ties":0, "undecided":0},
-        "terran":{"wins":0, "losses":0, "ties":0, "undecided":0}
+        "zerg":{"Win":0, "Loss":0, "Tie":0, "Undecided":0},
+        "protoss":{"Win":0, "Loss":0, "Tie":0, "Undecided":0},
+        "terran":{"Win":0, "Loss":0, "Tie":0, "Undecided":0}
     }
 
     map_results = {
-        "CactusValleyLE.SC2Map":{"wins":0, "losses":0, "ties":0, "undecided":0},
-        "BelShirVestigeLE.SC2Map":{"wins":0, "losses":0, "ties":0, "undecided":0},
-        "ProximaStationLE.SC2Map":{"wins":0, "losses":0, "ties":0, "undecided":0}
+        "CactusValleyLE.SC2Map":{"Win":0, "Loss":0, "Tie":0, "Undecided":0},
+        "BelShirVestigeLE.SC2Map":{"Win":0, "Loss":0, "Tie":0, "Undecided":0},
+        "ProximaStationLE.SC2Map":{"Win":0, "Loss":0, "Tie":0, "Undecided":0}
     }
 
     difficulty_results = {
-        "Easy":{"wins":0, "losses":0, "ties":0, "undecided":0},
-        "Medium":{"wins":0, "losses":0, "ties":0, "undecided":0},
-        "Hard":{"wins":0, "losses":0, "ties":0, "undecided":0}
+        "Easy":{"Win":0, "Loss":0, "Tie":0, "Undecided":0},
+        "Medium":{"Win":0, "Loss":0, "Tie":0, "Undecided":0},
+        "Hard":{"Win":0, "Loss":0, "Tie":0, "Undecided":0}
     }
 
     # run all combinations 
     for difficulty in DIFFICULTIES:
         for race in RACES:
             for map in MAPS:
-                print(f"currently processing enemny: {difficulty} {race} on {map}")
-                result = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
+                print(f"currently processing enemy: {difficulty} {race} on {map}")
+                output = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
+                result = parseOutput(output)
                 global_results[result] += 1
                 race_results[race][result] += 1
                 map_results[map][result] += 1
@@ -50,25 +51,28 @@ def runSimulations():
 
 def parseOutput(stdout):
 
-
-    #player id: 1\r\nPlayer 1 result: Win\r\nPlayer 2 result: Loss\r\n'
-
-    information = stdout.split("\\r\\n")
+    information = str(stdout).split("\\r\\n")
+    result = None
 
     for info in information:
-        print('wow')
-        print(info)
+        if "Player 1 result:" in info:
+            index = info.find(":")
+            result = info[index+2:]
 
-    return "string"
+    return result
 
 def getGraphs(glob, race, map, difficulty):
     # matplotlib tings
     print(glob)
+    print()
     print(race)
+    print()
     print(map)
+    print()
     print(difficulty)
     
 if __name__ == "__main__":
+    #runSimulations()
     testRun()
 
 
