@@ -29,16 +29,14 @@ void BasicSc2Bot::OnStep() {
 	CheckHarvesterStatus();
 
 	// If we have less than a certain threshold of supply used, do opener things.
-	if (InBasicOpener())
-	{
-		TryBuildGeyser();
-		TryBuildExpo();
-		TryBuildCyber();
-		TryBuildGateway();
-		TryBuildTwilight();
-		TryBuildDarkshrine();
-		TryBuildRoboticsFacility();
-	}
+	TryBuildGeyser();
+	TryBuildExpo();
+	TryBuildCyber();
+	TryBuildGateway();
+	TryBuildTwilight();
+	TryBuildDarkshrine();
+	//TryBuildRoboticsFacility();
+	
 	//if we have cleared out the map later in the game
 	if (InDominationMode()){
 		TryBuildStargate();
@@ -49,15 +47,6 @@ void BasicSc2Bot::OnStep() {
 void BasicSc2Bot::InitData() {
 	//how close we get to the base with DTs
 	approach_increment = 2.0;
-
-	//get gas spots
-	std::vector<UNIT_TYPEID> gas_ids;
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER);
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_RICHVESPENEGEYSER);
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PURIFIERVESPENEGEYSER);
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PROTOSSVESPENEGEYSER);
-	gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER);
 	
 	//find all neutral units (includes resources), go through them to find locations of gases
 	//these cover the mains and the expansions
@@ -67,11 +56,11 @@ void BasicSc2Bot::InitData() {
 	{
 		exp_loc.push_back(Point3D(sl.x, sl.y, 1));
 	}
+
 	for (Point3D exp : search::CalculateExpansionLocations(Observation(), Query()))
-		{
-			exp_loc.push_back(exp);
-		}
-		std::cout << exp_loc.size() << std::endl;
+	{
+		exp_loc.push_back(exp);
+	}
 
 	supply_thresholds = {
 		{"basic_opener", 40},
@@ -105,9 +94,13 @@ void BasicSc2Bot::InitData() {
 bool BasicSc2Bot::TryBuildPylon()
 {
 	if (Observation()->GetFoodCap() - Observation()->GetFoodUsed() < supply_scaling["pylon"]
-		&& Observation()->GetFoodUsed() <= 200)
+		&& Observation()->GetFoodCap() <= 200)
 	{
-		return TryBuildStructure(ABILITY_ID::BUILD_PYLON, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_PYLON);
+		// check for building gateway before more pylons
+		if (CountUnitType(UNIT_TYPEID::PROTOSS_PYLON) < 1 || (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) + CountUnitType(UNIT_TYPEID::PROTOSS_WARPGATE)))
+		{
+			return TryBuildStructure(ABILITY_ID::BUILD_PYLON, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_PYLON);
+		}
 	}
 
 	return false;
@@ -115,8 +108,8 @@ bool BasicSc2Bot::TryBuildPylon()
 
 bool BasicSc2Bot::TryBuildGeyser()
 {
-	if (Observation()->GetFoodWorkers() > supply_thresholds["geyser"]
-		&& CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < unit_limits["assimilator"] * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
+	if (Observation()->GetFoodWorkers() > supply_thresholds["geyser"] && Observation()->GetMinerals() >= 75
+		&& CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < 1 + (2 * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS)))
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_ASSIMILATOR, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ASSIMILATOR);
 	}
@@ -151,8 +144,7 @@ bool BasicSc2Bot::TryBuildCyber()
 
 bool BasicSc2Bot::TryBuildTwilight()
 {
-	if (Observation()->GetFoodUsed() > supply_thresholds["twilight_council"]
-	    && CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) > 0
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) > 0
 		&& CountUnitType(UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL) < unit_limits["twilight_council"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_TWILIGHTCOUNCIL, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL);
@@ -176,8 +168,7 @@ bool BasicSc2Bot::TryBuildStargate()
 
 bool BasicSc2Bot::TryBuildDarkshrine()
 {
-	if (Observation()->GetFoodUsed() > supply_thresholds["dark_shrine"]
-	    && CountUnitType(UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL) > 0
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL) > 0
 		&& CountUnitType(UNIT_TYPEID::PROTOSS_DARKSHRINE) < unit_limits["dark_shrine"])
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_DARKSHRINE, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_DARKSHRINE);
@@ -188,7 +179,10 @@ bool BasicSc2Bot::TryBuildDarkshrine()
 
 bool BasicSc2Bot::TryBuildGateway()
 {
-	if (CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < Observation()->GetFoodUsed() / supply_scaling["gateway"])
+	// Ties gateway count to supply used and nexus count, or builds many if we have too much money
+	if ((CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < Observation()->GetFoodUsed() / (supply_scaling["gateway"] + (4 * CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY))) 
+		&& CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < 2 * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
+		|| Observation()->GetMinerals() > 1700)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_GATEWAY);
 	}
@@ -233,6 +227,7 @@ size_t BasicSc2Bot::CountUnitType(UNIT_TYPEID unit_type) {
 	return Observation()->GetUnits(Unit::Alliance::Self, IsUnit(unit_type)).size();
 }
 
+// Returns closest mineral patch to supplied location
 const Unit* BasicSc2Bot::FindNearestMineralPatch(const Point2D& start) {
 	Units units = Observation()->GetUnits(Unit::Alliance::Neutral);
 	float distance = std::numeric_limits<float>::max();
@@ -257,10 +252,10 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 	// If a unit already is building a supply structure of this type, do nothing.
 	// Also get an scv to build the structure.
 	Units units_to_assign;
-	Units units = observation->GetUnits(Unit::Alliance::Self);
+	Units units = observation->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::PROTOSS_PROBE));
 	for (const auto& unit : units) {
-		if (unit->unit_type == UNIT_TYPEID::PROTOSS_PROBE && (unit->orders.empty() || (unit->orders[0].ability_id == ABILITY_ID::SMART 
-			&& observation->GetUnit(unit->orders[0].target_unit_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR))) {
+		if (unit->orders.empty() || (unit->orders[0].ability_id == 3666
+			&& observation->GetUnit(unit->orders[0].target_unit_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR)) {
 			units_to_assign.push_back(unit);
 			if (units_to_assign.size() >= geyser->ideal_harvesters - geyser->assigned_harvesters)
 			{
@@ -511,8 +506,6 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 
 }
 
-
-
 // version for building only one building.
 bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type, UNIT_TYPEID structure_type) {
 	const ObservationInterface* observation = Observation();
@@ -522,13 +515,18 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	// Also get a probe to build the structure.
 	const Unit* unit_to_build = nullptr;
 	Units units = observation->GetUnits(Unit::Alliance::Self, IsUnit(unit_type));
-	for (const auto& unit : units)
-	{	// checks if we are already building a structure of this type.
-		if (unit->unit_type == structure_type && unit->build_progress < 1.0)
-		{
-			return false;
+	if (structure_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR)
+	{
+		for (const auto& unit : units)
+		{	// checks if we are already building a structure of this type.
+			if (unit->unit_type == structure_type && unit->build_progress < 1.0)
+			{
+				return false;
+			}
 		}
 	}
+
+	
 	for (const auto& unit : units) {
 		for (const auto& order : unit->orders) {
 			if (order.ability_id == ability_type_for_structure && unit->is_alive) {
@@ -561,15 +559,8 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	else if (structure_type == UNIT_TYPEID::PROTOSS_ASSIMILATOR)
 	{
 		Units poss_geysers = observation->GetUnits(Unit::Alliance(3));		// gets neutral units
-		Units poss_nexi = observation->GetUnits(Unit::Alliance(1));			// gets friendly units
-		Units nexi;
-		for (const auto& poss_nex : poss_nexi)								// puts all friendly nexi into nexi. Used for finding nearby geysers.
-		{
-			if (poss_nex->unit_type == UNIT_TYPEID::PROTOSS_NEXUS)
-			{
-				nexi.push_back(poss_nex);
-			}
-		}
+		Units nexi = observation->GetUnits(Unit::Alliance(1), IsUnit(UNIT_TYPEID::PROTOSS_NEXUS));			// gets friendly units
+
 		std::vector<UNIT_TYPEID> gas_ids;
 		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
 		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER);
@@ -577,6 +568,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PURIFIERVESPENEGEYSER);
 		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PROTOSSVESPENEGEYSER);
 		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER);
+
 		for (const auto& poss_geyser : poss_geysers)
 		{
 			for (UNIT_TYPEID gas_id : gas_ids)				
@@ -584,9 +576,9 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
 				{
 					bool close_to_nexus = false;
-					for (const auto& poss_nex : nexi)
+					for (const auto& nexus : nexi)
 					{
-						if (SqDist(poss_nex, poss_geyser) < 70)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+						if (SqDist(nexus, poss_geyser) < 60)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
 						{
 							close_to_nexus = true;
 						}

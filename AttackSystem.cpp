@@ -58,7 +58,7 @@ Point3D AttackSystem::getTarget(const Unit * unit) {
  		size_t closest = 0;
  		float dist = std::numeric_limits<float>::max();
  		for (int i = 0; i < enemies.size(); i++){
-			if (unit->unit_type != UNIT_TYPEID::PROTOSS_VOIDRAY && unit->unit_type != UNIT_TYPEID::PROTOSS_ADEPT && enemies[i]->is_flying){
+			if (unit->unit_type != UNIT_TYPEID::PROTOSS_VOIDRAY && enemies[i]->is_flying){
 				continue;
 			}
  			auto d = Distance3D(unit->pos,enemies[i]->pos);
