@@ -64,14 +64,16 @@ void BasicSc2Bot::OnStep() {
 	TryBuildPylon();
 	CheckHarvesterStatus();
 
-	// If we have less than a certain threshold of supply used, do opener things.
 	TryBuildGeyser();
 	TryBuildExpo();
 	TryBuildCyber();
 	TryBuildGateway();
 	TryBuildTwilightCouncil();
 	TryBuildDarkShrine();
-	//TryBuildRoboticsFacility();
+	
+	if (warp_prism_toggle) {
+		TryBuildRoboticsFacility();
+	}
 	
 	//if we have cleared out the map later in the game
 	if (InDominationMode()){

@@ -65,6 +65,9 @@ private:
 	std::map<std::string, int> supply_scaling;
 	std::map<std::string, int> mineral_counts;
 	std::map<std::string, int> sq_distances;
+
+	// Set to true to enable warp prism warp in
+	bool warp_prism_toggle = false;
 };
 
 #endif
