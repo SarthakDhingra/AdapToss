@@ -10,7 +10,7 @@ public:
 	void AttackStep();
 	void SetAttackUnits();
 	void SendAttackUnits();
-	Point3D getTarget(const Unit * unit);
+	Point3D GetTarget(const Unit * unit);
 	size_t CountUnitType(UNIT_TYPEID unit_type);
 
 private:
