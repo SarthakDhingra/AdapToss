@@ -42,7 +42,7 @@ void AttackSystem::SendAttackUnits() {
 
 	// Send attack units to target, if no target, let it go idle so it is sent into scouting mode
 	for (const auto& unit : attack_units) {
-		auto target =  getTarget(unit);
+		auto target = GetTarget(unit);
 		if (target.x != observation->GetGameInfo().width + 10){
 			actions->UnitCommand(unit, ABILITY_ID::ATTACK, target);
 		}
@@ -51,7 +51,7 @@ void AttackSystem::SendAttackUnits() {
 	return;
 }
 
-Point3D AttackSystem::getTarget(const Unit * unit) {
+Point3D AttackSystem::GetTarget(const Unit * unit) {
 	// Get closest enemy to this unit for it to attack
 	Units enemies = observation->GetUnits(Unit::Alliance::Enemy);
  	if (enemies.size() > 0){

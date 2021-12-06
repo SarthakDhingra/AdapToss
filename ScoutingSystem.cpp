@@ -39,12 +39,7 @@ void ScoutingSystem::InitScoutingData() {
 	};
 }
 
-void ScoutingSystem::ScoutingStep() {
-	// early out if system is turned off
-	if (!toggle_on) {
-		return;
-	}
-	
+void ScoutingSystem::ScoutingStep() {	
 	SetScout();
 	SendScout();
 
@@ -66,14 +61,13 @@ void ScoutingSystem::SetScout() {
 	}
 	
 	Units units = observation->GetUnits(Unit::Alliance::Self, IsUnit(scout_type));
-	for (const auto& unit : units) {
-		scout = unit;
-		return;
+	if (!units.empty()) {
+		scout = units.front();
 	}
 	return;
 }
 
-const Unit* ScoutingSystem::Get_Scout() const
+const Unit* ScoutingSystem::GetScout() const
 {
 	return scout;
 }

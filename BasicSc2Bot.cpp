@@ -54,8 +54,6 @@ void BasicSc2Bot::OnGameEnd() {
 	return;
 }
 
-
-
 void BasicSc2Bot::OnStep() {
 
 	scouting_system.ScoutingStep();
@@ -66,14 +64,16 @@ void BasicSc2Bot::OnStep() {
 	TryBuildPylon();
 	CheckHarvesterStatus();
 
-	// If we have less than a certain threshold of supply used, do opener things.
 	TryBuildGeyser();
 	TryBuildExpo();
 	TryBuildCyber();
 	TryBuildGateway();
-	TryBuildTwilight();
-	TryBuildDarkshrine();
-	//TryBuildRoboticsFacility();
+	TryBuildTwilightCouncil();
+	TryBuildDarkShrine();
+	
+	if (warp_prism_toggle) {
+		TryBuildRoboticsFacility();
+	}
 	
 	//if we have cleared out the map later in the game
 	if (InDominationMode()){
@@ -83,26 +83,21 @@ void BasicSc2Bot::OnStep() {
 }
 
 void BasicSc2Bot::InitData() {
-	//how close we get to the base with DTs
-	approach_increment = 2.0;
-	
-	//find all neutral units (includes resources), go through them to find locations of gases
-	//these cover the mains and the expansions
+	// Create a vector with all possible base locations in the map
 	Units poss_geysers = Observation()->GetUnits(Unit::Alliance::Neutral);		// gets neutral units
 	const GameInfo& game_info = Observation()->GetGameInfo();
-	for (sc2::Point2D sl : game_info.start_locations)
+	for (const Point2D& sl : game_info.start_locations)
 	{
 		exp_loc.push_back(Point3D(sl.x, sl.y, 1));
 	}
 
-	for (Point3D exp : search::CalculateExpansionLocations(Observation(), Query()))
+	for (const Point3D& exp : search::CalculateExpansionLocations(Observation(), Query()))
 	{
 		exp_loc.push_back(exp);
 	}
 
 	supply_thresholds = {
-		{"basic_opener", 40},
-		{"domination_mode",41},
+		{"domination_mode", 41},
 		{"pylon", 8},
 		{"geyser", 15},
 		{"robotics_facility", 20},
@@ -111,14 +106,13 @@ void BasicSc2Bot::InitData() {
 	};
 
 	unit_limits = {
-		{"assimilator", 2},
 		{"cybernetics_core", 1},
 		{"adept", 3},
 		{"robotics_facility", 1},
 		{"warp_prism", 1},
 		{"twilight_council", 1},
 		{"dark_shrine", 1},
-		{"stargate",1},
+		{"stargate", 1},
 	};
 
 	supply_scaling = {
@@ -126,6 +120,15 @@ void BasicSc2Bot::InitData() {
 		{"gateway", 14},
 		{"nexus", 16},
 		{"dark_templar", 3}
+	};
+
+	mineral_counts = {
+		{"expo", 1200},
+		{"gateway", 1700}
+	};
+
+	sq_distances = {
+		{"geyser", 70},
 	};
 }
 
@@ -146,8 +149,11 @@ bool BasicSc2Bot::TryBuildPylon()
 
 bool BasicSc2Bot::TryBuildGeyser()
 {
-	if (Observation()->GetFoodWorkers() > supply_thresholds["geyser"] && Observation()->GetMinerals() >= 75
-		&& CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < 1 + (2 * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS)))
+	bool enough_workers = Observation()->GetFoodWorkers() > supply_thresholds["geyser"];
+	bool enough_minerals = Observation()->GetMinerals() >= 75;
+	bool geyser_nexus_ratio = CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < 1 + (2 * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS));
+	
+	if (enough_workers && enough_minerals && geyser_nexus_ratio)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_ASSIMILATOR, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ASSIMILATOR);
 	}
@@ -161,8 +167,11 @@ bool BasicSc2Bot::TryBuildExpo()
 	int nexus_count = CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS);
 
 	// builds a nexus whenever we have no nexus, or if the food to nexus ratio is too high
-	if (observation->GetMinerals() >= 400 && 
-		(nexus_count == 0 || ((float) observation->GetFoodUsed() / (float) nexus_count) > (supply_scaling["nexus"] + (3 * nexus_count)) || observation->GetMinerals() > 1200))
+	bool enough_minerals = observation->GetMinerals() >= 400;
+	bool food_nexus_ratio = (nexus_count == 0) || ((float)observation->GetFoodUsed() / (float)nexus_count) > (supply_scaling["nexus"] + (3 * nexus_count));
+	bool high_minerals = observation->GetMinerals() > mineral_counts["expo"];
+	
+	if (enough_minerals && food_nexus_ratio || high_minerals)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_NEXUS, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_NEXUS);
 	}
@@ -180,7 +189,7 @@ bool BasicSc2Bot::TryBuildCyber()
 	return false;
 }
 
-bool BasicSc2Bot::TryBuildTwilight()
+bool BasicSc2Bot::TryBuildTwilightCouncil()
 {
 	if (CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) > 0
 		&& CountUnitType(UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL) < unit_limits["twilight_council"])
@@ -194,7 +203,7 @@ bool BasicSc2Bot::TryBuildTwilight()
 bool BasicSc2Bot::TryBuildStargate()
 {
 	//build cyber core first, otherwise if we are under limit build a stargate 
-	if (CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) == 0){
+	if (CountUnitType(UNIT_TYPEID::PROTOSS_CYBERNETICSCORE) == 0) {
 		TryBuildCyber();
 		return false;
 	}
@@ -204,7 +213,7 @@ bool BasicSc2Bot::TryBuildStargate()
 	return false;
 }
 
-bool BasicSc2Bot::TryBuildDarkshrine()
+bool BasicSc2Bot::TryBuildDarkShrine()
 {
 	if (CountUnitType(UNIT_TYPEID::PROTOSS_TWILIGHTCOUNCIL) > 0
 		&& CountUnitType(UNIT_TYPEID::PROTOSS_DARKSHRINE) < unit_limits["dark_shrine"])
@@ -218,9 +227,14 @@ bool BasicSc2Bot::TryBuildDarkshrine()
 bool BasicSc2Bot::TryBuildGateway()
 {
 	// Ties gateway count to supply used and nexus count, or builds many if we have too much money
-	if ((CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < Observation()->GetFoodUsed() / (supply_scaling["gateway"] + (4 * CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY))) 
-		&& CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY) < 2 * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
-		|| Observation()->GetMinerals() > 1700)
+	int gateway_count = CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY);
+	int nexus_count = CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS);
+
+	bool food_gateway_ratio = gateway_count < Observation()->GetFoodUsed() / (supply_scaling["gateway"] + (4 * gateway_count));
+	bool gateway_nexus_ratio = gateway_count < 2 * nexus_count;
+	bool high_minerals = Observation()->GetMinerals() > mineral_counts["gateway"];
+
+	if (food_gateway_ratio && gateway_nexus_ratio || high_minerals)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_GATEWAY);
 	}
@@ -239,20 +253,11 @@ bool BasicSc2Bot::TryBuildRoboticsFacility()
 	return false;
 }
 
-bool BasicSc2Bot::InBasicOpener()
-{
-	if (Observation()->GetFoodUsed() < supply_thresholds["basic_opener"])
-	{
-		return true;
-	}
-	return false;
-}
-
 bool BasicSc2Bot::InDominationMode()
 {
 	//if we are later in the game and no enemies, then we must have wiped the main ones out
-	if (Observation()->GetFoodUsed() > supply_thresholds["domination_mode"] && 
-	Observation()->GetUnits(Unit::Alliance::Enemy).empty())
+	if (Observation()->GetFoodUsed() > supply_thresholds["domination_mode"]
+		&& Observation()->GetUnits(Unit::Alliance::Enemy).empty())
 	{
 		dom_mode = true;
 		return true;
@@ -261,6 +266,7 @@ bool BasicSc2Bot::InDominationMode()
 	dom_mode = false;
 	return false;
 }
+
 size_t BasicSc2Bot::CountUnitType(UNIT_TYPEID unit_type) {
 	return Observation()->GetUnits(Unit::Alliance::Self, IsUnit(unit_type)).size();
 }
@@ -292,8 +298,21 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 	Units units_to_assign;
 	Units units = observation->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::PROTOSS_PROBE));
 	for (const auto& unit : units) {
-		if (unit->orders.empty() || (unit->orders[0].ability_id == 3666
-			&& observation->GetUnit(unit->orders[0].target_unit_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR)) {
+		
+		// check if unit is harvesting at something other than a geyser
+		bool is_harvesting = false;
+		bool not_at_geyser = false;
+		if (!unit->orders.empty()) {
+			is_harvesting = unit->orders[0].ability_id == ABILITY_ID::HARVEST_GATHER;
+			
+			Tag target_tag = unit->orders[0].target_unit_tag;
+			if (target_tag) {
+				not_at_geyser = observation->GetUnit(target_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR;
+			}
+		}
+
+		if (unit->orders.empty() || (is_harvesting && not_at_geyser))
+		{
 			units_to_assign.push_back(unit);
 			if (units_to_assign.size() >= geyser->ideal_harvesters - geyser->assigned_harvesters)
 			{
@@ -338,16 +357,6 @@ bool BasicSc2Bot::CheckHarvesterStatus()
 void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 	switch (unit->unit_type.ToType()) {
 
-		case UNIT_TYPEID::PROTOSS_NEXUS: {			
-			// trains workers until full.
-			// note, we need to update unit->assigned_harvesters because currently it counts scouting probes and dead probes.
-			if (unit->assigned_harvesters < (static_cast<size_t>(unit->ideal_harvesters) + 6) * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS))
-			{
-				//Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
-			}
-
-			break;
-		}
 		case UNIT_TYPEID::PROTOSS_STARGATE: {
 			Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_VOIDRAY);
 			break;
@@ -490,64 +499,23 @@ void BasicSc2Bot::InitWarpInLocation() {
 // returns the squared distance between two Units
 float BasicSc2Bot::SqDist(const Unit* a, const Unit* b) const
 {
-	float x, y;
-	x = (a->pos.x - b->pos.x);
-	x *= x;
-	y = (a->pos.y - b->pos.y);
-	y *= y;
-	return x + y;
+	return SqDist(a->pos, b->pos);
 }
 
 // returns the squared distance between two Units
-float BasicSc2Bot::SqDist(const sc2::Point3D* a, const sc2::Point3D* b) const
+float BasicSc2Bot::SqDist(const Point3D& a, const Point3D& b) const
 {
 	float x, y;
-	x = (a->x - b->x);
+	x = (a.x - b.x);
 	x *= x;
-	y = (a->y - b->y);
+	y = (a.y - b.y);
 	y *= y;
 	return x + y;
 }
 
-bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type) {
-	const ObservationInterface* observation = Observation();
-	const Unit* scout = scouting_system.Get_Scout();
-
-	// If a unit already is building a supply structure of this type, do nothing.
-	// Also get an scv to build the structure.
-	const Unit* unit_to_build = nullptr;
-	Units units = observation->GetUnits(Unit::Alliance::Self, IsUnit(unit_type));
-	for (const auto& unit : units) {
-		for (const auto& order : unit->orders) {
-			if (order.ability_id == ability_type_for_structure) {
-				return false;
-			}
-		}
-
-		if (unit->tag != scout->tag) {
-			unit_to_build = unit;
-		}
-	}
-
-	// if no  unit assigned return false (prevents reading nullptr exception)
-	if (!unit_to_build) {
-		return false;
-	}
-
-	float rx = GetRandomScalar();
-	float ry = GetRandomScalar();
-
-	Actions()->UnitCommand(unit_to_build,
-		ability_type_for_structure,
-		Point2D(unit_to_build->pos.x + rx * 15.0f, unit_to_build->pos.y + ry * 15.0f));
-	return true;
-
-}
-
-// version for building only one building.
 bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type, UNIT_TYPEID structure_type) {
 	const ObservationInterface* observation = Observation();
-	const Unit* scout = scouting_system.Get_Scout();
+	const Unit* scout = scouting_system.GetScout();
 
 	// If a unit already is building a supply structure of this type, do nothing.
 	// Also get a probe to build the structure.
@@ -596,8 +564,8 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	}
 	else if (structure_type == UNIT_TYPEID::PROTOSS_ASSIMILATOR)
 	{
-		Units poss_geysers = observation->GetUnits(Unit::Alliance(3));		// gets neutral units
-		Units nexi = observation->GetUnits(Unit::Alliance(1), IsUnit(UNIT_TYPEID::PROTOSS_NEXUS));			// gets friendly units
+		Units poss_geysers = observation->GetUnits(Unit::Alliance(Unit::Alliance::Neutral));
+		Units nexi = observation->GetUnits(Unit::Alliance(Unit::Alliance::Self), IsUnit(UNIT_TYPEID::PROTOSS_NEXUS));
 
 		std::vector<UNIT_TYPEID> gas_ids;
 		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
@@ -616,7 +584,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 					bool close_to_nexus = false;
 					for (const auto& nexus : nexi)
 					{
-						if (SqDist(nexus, poss_geyser) < 60)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+						if (SqDist(nexus, poss_geyser) < sq_distances["geyser"])		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
 						{
 							close_to_nexus = true;
 						}
@@ -634,12 +602,12 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	}
 	else if (structure_type == UNIT_TYPEID::PROTOSS_NEXUS)
 	{
-		sc2::QueryInterface* query = Query();
-		std::vector<sc2::Point3D> expoSpots = search::CalculateExpansionLocations(observation, Query());
-		std::vector<sc2::Point3D> validExpos;
+		QueryInterface* query = Query();
+		std::vector<Point3D> expoSpots = search::CalculateExpansionLocations(observation, Query());
+		std::vector<Point3D> validExpos;
 		for (Point3D expoSpot : expoSpots)
 		{
-			if (Query()->Placement(ability_type_for_structure, sc2::Point2D(expoSpot.x, expoSpot.y)))
+			if (Query()->Placement(ability_type_for_structure, Point2D(expoSpot.x, expoSpot.y)))
 			{
 				validExpos.push_back(expoSpot);
 			}
@@ -650,13 +618,13 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 			return false;
 		}
 
-		sc2::Point3D closestPoint = validExpos.front();
-		float closestDist = SqDist(&unit_to_build->pos, &closestPoint);
+		Point3D closestPoint = validExpos.front();
+		float closestDist = SqDist(unit_to_build->pos, closestPoint);
 		float potentialDist;
 
-		for (sc2::Point3D expo : validExpos)
+		for (Point3D expo : validExpos)
 		{
-			potentialDist = SqDist(&unit_to_build->pos, &expo);
+			potentialDist = SqDist(unit_to_build->pos, expo);
 			if (potentialDist < closestDist)
 			{
 				closestDist = potentialDist;
@@ -664,7 +632,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 			}
 		}
 
-		observation->GetUnits(Unit::Alliance(1), IsUnit(unit_to_build->unit_type));
+		observation->GetUnits(Unit::Alliance(Unit::Alliance::Self), IsUnit(unit_to_build->unit_type));
 		Actions()->UnitCommand(unit_to_build,
 			ability_type_for_structure,
 			closestPoint);
@@ -672,7 +640,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	}
 	else
 	{
-		for (const Unit * unit : observation->GetUnits(Unit::Alliance(1)))
+		for (const Unit * unit : observation->GetUnits(Unit::Alliance(Unit::Alliance::Self)))
 		{
 			if (unit->unit_type == UNIT_TYPEID::PROTOSS_WARPPRISM)				// checks to not build at a warp prism
 			{
