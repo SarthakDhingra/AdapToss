@@ -7,7 +7,6 @@ using namespace sc2;
 
 void BasicSc2Bot::OnGameStart() {
 	
-
 	InitData();
 	InitWarpInLocation();
 
@@ -19,7 +18,46 @@ void BasicSc2Bot::OnGameStart() {
 	return;
 }
 
+
+// for statistics
+void BasicSc2Bot::OnGameEnd() {
+	
+	// get results
+	std::vector<PlayerResult> results = Observation()->GetResults();
+	std::string result;
+
+	// print our id
+	std::cout << "Player id: " << Observation()->GetPlayerID() << std::endl;
+
+	// parse different result cases
+	for (int i = 0; i < results.size(); ++i) {
+		switch (results[i].result) {
+			case GameResult::Win:
+				result = "Win";
+				break;
+			case GameResult::Loss:
+				result = "Loss";
+				break;
+			case GameResult::Tie:
+				result = "Tie";
+				break;
+			default:
+				result = "Undecided";
+				break;
+		}
+
+		// print player results
+		std::cout << "Player " << results[i].player_id << " result: " << result << std::endl;
+		
+	}
+	
+	return;
+}
+
+
+
 void BasicSc2Bot::OnStep() {
+
 	scouting_system.ScoutingStep();
 	defense_system.DefenseStep();
 	attack_system.AttackStep();
