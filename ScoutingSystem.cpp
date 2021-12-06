@@ -73,7 +73,7 @@ void ScoutingSystem::SetScout() {
 	return;
 }
 
-const Unit* ScoutingSystem::Get_Scout() const
+const Unit* ScoutingSystem::GetScout() const
 {
 	return scout;
 }

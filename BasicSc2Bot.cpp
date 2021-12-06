@@ -132,7 +132,11 @@ void BasicSc2Bot::InitData() {
 		{"geyser", 75},
 		{"expo", 1200},
 		{"gateway", 1700}
-	}
+	};
+
+	sq_distances = {
+		{"geyser", 70},
+	};
 }
 
 bool BasicSc2Bot::TryBuildPylon()
@@ -512,7 +516,7 @@ float BasicSc2Bot::SqDist(const Point3D& a, const Point3D& b) const
 
 bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type) {
 	const ObservationInterface* observation = Observation();
-	const Unit* scout = scouting_system.Get_Scout();
+	const Unit* scout = scouting_system.GetScout();
 
 	// If a unit already is building a supply structure of this type, do nothing.
 	// Also get an scv to build the structure.
@@ -548,7 +552,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 // version for building only one building.
 bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type, UNIT_TYPEID structure_type) {
 	const ObservationInterface* observation = Observation();
-	const Unit* scout = scouting_system.Get_Scout();
+	const Unit* scout = scouting_system.GetScout();
 
 	// If a unit already is building a supply structure of this type, do nothing.
 	// Also get a probe to build the structure.
@@ -617,7 +621,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 					bool close_to_nexus = false;
 					for (const auto& nexus : nexi)
 					{
-						if (SqDist(nexus, poss_geyser) < 60)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+						if (SqDist(nexus, poss_geyser) < sq_distances["geyser"])		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
 						{
 							close_to_nexus = true;
 						}

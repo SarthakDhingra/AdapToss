@@ -66,6 +66,7 @@ private:
 	std::map<std::string, int> unit_limits;
 	std::map<std::string, int> supply_scaling;
 	std::map<std::string, int> mineral_counts;
+	std::map<std::string, int> sq_distances;
 };
 
 #endif
