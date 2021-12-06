@@ -298,8 +298,21 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 	Units units_to_assign;
 	Units units = observation->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::PROTOSS_PROBE));
 	for (const auto& unit : units) {
-		if (unit->orders.empty() || (unit->orders[0].ability_id == ABILITY_ID::HARVEST_GATHER
-			&& observation->GetUnit(unit->orders[0].target_unit_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR)) {
+		
+		// check if unit is harvesting at something other than a geyser
+		bool is_harvesting = false;
+		bool not_at_geyser = false;
+		if (!unit->orders.empty()) {
+			is_harvesting = unit->orders[0].ability_id == ABILITY_ID::HARVEST_GATHER;
+			
+			Tag target_tag = unit->orders[0].target_unit_tag;
+			if (target_tag) {
+				not_at_geyser = observation->GetUnit(target_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR;
+			}
+		}
+
+		if (unit->orders.empty() || (is_harvesting && not_at_geyser))
+		{
 			units_to_assign.push_back(unit);
 			if (units_to_assign.size() >= geyser->ideal_harvesters - geyser->assigned_harvesters)
 			{
