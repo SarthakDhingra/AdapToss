@@ -27,7 +27,7 @@ public:
 	bool InBasicOpener();
 	bool AssignProbeToGas(const Unit *geyser);
 	float SqDist(const Unit *a, const Unit *b) const;
-	float SqDist(const sc2::Point3D* a, const sc2::Point3D* b) const;
+	float SqDist(const Point3D& a, const Point3D& b) const;
 	bool CheckHarvesterStatus();
 
 	bool TryBuildPylon();
@@ -61,9 +61,11 @@ private:
 	Point2D warp_in_position;
 	bool dom_mode = false;
 	double approach_increment;
+	
 	std::map<std::string, int> supply_thresholds;
 	std::map<std::string, int> unit_limits;
 	std::map<std::string, int> supply_scaling;
+	std::map<std::string, int> mineral_counts;
 };
 
 #endif
