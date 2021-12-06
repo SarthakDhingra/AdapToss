@@ -77,6 +77,9 @@ def parseOutput(stdout):
 # TODO: generate graphs and tables from results
 def getGraphs(glob, race, map, difficulty):
 
+    # should print to file
+    print(glob)
+
     for key in map:
         map[key.replace('.SC2Map', '')] = map.pop(key)
 
@@ -107,7 +110,7 @@ def getGraphs(glob, race, map, difficulty):
         # Add some text for labels, title and custom x-axis tick labels, etc.
         ax.set_ylabel('Quantity')
         ax.set_xlabel(name)
-        ax.set_title(f'Results by {name}')
+        ax.legend()
         ax.set_xticks(x, categories)
 
         ax.bar_label(rects1, padding=1)
@@ -122,34 +125,34 @@ def getGraphs(glob, race, map, difficulty):
 
     
 if __name__ == "__main__":
-    #runSimulations()
+    runSimulations()
     #testRun()
 
-    glob = {'Win': 47, 'Loss': 43, 'Tie': 0, 'Undecided': 0}
+    # glob = {'Win': 47, 'Loss': 43, 'Tie': 0, 'Undecided': 0}
 
-    race = {
-        'zerg': {'Win': 14, 'Loss': 16, 'Tie': 0, 'Undecided': 0}, 
-        'protoss': {'Win': 17, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 
-        'terran': {'Win': 16, 'Loss': 14, 'Tie': 0, 'Undecided': 0}
-    }
+    # race = {
+    #     'zerg': {'Win': 14, 'Loss': 16, 'Tie': 0, 'Undecided': 0}, 
+    #     'protoss': {'Win': 17, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 
+    #     'terran': {'Win': 16, 'Loss': 14, 'Tie': 0, 'Undecided': 0}
+    # }
 
-    map = {
-        'CactusValleyLE.SC2Map': {'Win': 16, 'Loss': 14, 'Tie': 0, 'Undecided': 0}, 
-        'BelShirVestigeLE.SC2Map': {'Win': 17, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 
-        'ProximaStationLE.SC2Map': {'Win': 14, 'Loss': 16, 'Tie': 0, 'Undecided': 0}
-    }
+    # map = {
+    #     'CactusValleyLE.SC2Map': {'Win': 16, 'Loss': 14, 'Tie': 0, 'Undecided': 0}, 
+    #     'BelShirVestigeLE.SC2Map': {'Win': 17, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 
+    #     'ProximaStationLE.SC2Map': {'Win': 14, 'Loss': 16, 'Tie': 0, 'Undecided': 0}
+    # }
 
-    difficulty = {
-        'VeryEasy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
-        'Easy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
-        'Medium': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
-        'MediumHard': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
-        'Hard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}, 
-        'HardVeryHard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}, 
-        'VeryHard': {'Win': 3, 'Loss': 6, 'Tie': 0, 'Undecided': 0}
-    }
+    # difficulty = {
+    #     'VeryEasy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
+    #     'Easy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
+    #     'Medium': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
+    #     'MediumHard': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
+    #     'Hard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}, 
+    #     'HardVeryHard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}, 
+    #     'VeryHard': {'Win': 3, 'Loss': 6, 'Tie': 0, 'Undecided': 0}
+    # }
 
-    getGraphs(glob, race, map, difficulty)
+    # getGraphs(glob, race, map, difficulty)
 
 
 # TODO
