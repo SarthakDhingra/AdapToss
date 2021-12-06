@@ -37,9 +37,7 @@ void  DefenseSystem::SetDefense() {
 				defense.push_back(unit);
 			}
 		}
-
 	}
-
 }
 
 void DefenseSystem::SendDefense() {
@@ -47,8 +45,6 @@ void DefenseSystem::SendDefense() {
 	// get all enemies
 	Units enemies = observation->GetUnits(Unit::Alliance::Enemy);
 	const GameInfo& game_info = observation->GetGameInfo();
-
-
 
 	// TODO: If a large number of enemies are amassing and are closeish to the base, we can create more defense units maybe? 
 	for (const auto& e : enemies) {

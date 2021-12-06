@@ -14,7 +14,7 @@ public:
 	void SendScout(const Unit * unit = nullptr, bool mode = false);
 	void ScoutEarlyRush();
 	void ScoutDetection();
-	const Unit* ScoutingSystem::Get_Scout() const;
+	const Unit* GetScout() const;
 
 private:
 	const ObservationInterface* observation = nullptr;
@@ -34,6 +34,5 @@ private:
 	// Keep track of what the supply threshold is for some early decisions
 	std::map<std::string, int> early_scouting_thresholds;
 	std::map<const Unit *, int> tasks;
-	bool toggle_on = true;
 };
 
