@@ -115,6 +115,7 @@ void BasicSc2Bot::InitData() {
 		{"twilight_council", 1},
 		{"dark_shrine", 1},
 		{"stargate", 1},
+		{"probe", 100}
 	};
 
 	supply_scaling = {
@@ -347,7 +348,8 @@ bool BasicSc2Bot::CheckHarvesterStatus()
 		}
 		else if (unit->unit_type == UNIT_TYPEID::PROTOSS_NEXUS)
 		{
-			if (unit->ideal_harvesters > unit->assigned_harvesters && unit->orders.empty())
+			bool under_probe_limit = CountUnitType(UNIT_TYPEID::PROTOSS_PROBE) < unit_limits["probe"];
+			if (unit->ideal_harvesters > unit->assigned_harvesters && unit->orders.empty() && under_probe_limit)
 			{
 				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
 			}
