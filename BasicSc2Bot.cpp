@@ -85,7 +85,7 @@ void BasicSc2Bot::OnStep() {
 void BasicSc2Bot::InitData() {
 	
 	// Create a vector with all possible expansion locations in the map
-	std::vector<Point3D> expo_spots = search::CalculateExpansionLocations(Observation(), Query());
+	expo_spots = search::CalculateExpansionLocations(Observation(), Query());
 	
 	const GameInfo& game_info = Observation()->GetGameInfo();
 	for (const Point2D& sl : game_info.start_locations)
