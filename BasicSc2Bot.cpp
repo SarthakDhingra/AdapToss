@@ -308,9 +308,9 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 		if (!unit->orders.empty()) {
 			is_harvesting = unit->orders[0].ability_id == ABILITY_ID::HARVEST_GATHER;
 			
-			Tag target_tag = unit->orders[0].target_unit_tag;
-			if (target_tag) {
-				not_at_geyser = observation->GetUnit(target_tag)->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR;
+			const Unit* target_unit = observation->GetUnit(unit->orders[0].target_unit_tag);
+			if (target_unit) {
+				not_at_geyser = target_unit->unit_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR;
 			}
 		}
 
