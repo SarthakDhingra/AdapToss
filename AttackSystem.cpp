@@ -9,7 +9,7 @@ void AttackSystem::Init(const ObservationInterface* obs, ActionInterface* act, s
 	// Attacking system needs to be initialized on game start rather than at construction
 	observation = obs;
 	actions = act;
-	exp_locs = locs;
+	base_locs = locs;
 }
 
 void AttackSystem::AttackStep() {

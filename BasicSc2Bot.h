@@ -56,7 +56,12 @@ private:
 	AttackSystem attack_system;
 	SlanderSystem slander_system;
 	
-	std::vector<Point3D> exp_loc;
+	// all possible base locations
+	std::vector<Point3D> base_locs;
+	
+	// all possible expansion locations
+	std::vector<Point3D> expo_spots;
+	
 	Point2D warp_in_position;
 	bool dom_mode = false;
 	
