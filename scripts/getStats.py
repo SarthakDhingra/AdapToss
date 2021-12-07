@@ -10,7 +10,7 @@ import numpy as np
 # all possible settings
 MAPS = ["CactusValleyLE.SC2Map", "BelShirVestigeLE.SC2Map", "ProximaStationLE.SC2Map"]
 RACES = ["zerg" , "protoss", "terran"]
-DIFFICULTIES = ["VeryEasy", "Easy", "Medium", "MediumHard", "Hard", "HardVeryHard", "VeryHard"] # "CheatVision", "CheatMoney", "CheatInsane"]
+DIFFICULTIES = ["Hard", "HardVeryHard", "VeryHard"] #["VeryEasy", "Easy", "Medium", "MediumHard", "Hard", "HardVeryHard", "VeryHard"] # "CheatVision", "CheatMoney", "CheatInsane"]
 
 # global results hash
 global_results = {"Win":0, "Loss":0, "Tie":0, "Undecided":0}
@@ -44,25 +44,26 @@ def testRun():
 def runSimulations():
 
     # run all combinations 
-    for map in MAPS:
-        for race in RACES:
-            for difficulty in DIFFICULTIES:
-                # print for ourselves
-                print(f"currently processing enemy: {difficulty} {race} on {map}")
-                # run simulation
-                output = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
-                # get stdout and process it
-                result = parseOutput(output)
+    for i in range(5):
+        for map in MAPS:
+            for race in RACES:
+                for difficulty in DIFFICULTIES:
+                    # print for ourselves
+                    print(f"currently processing enemy: {difficulty} {race} on {map}")
+                    # run simulation
+                    output = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
+                    # get stdout and process it
+                    result = parseOutput(output)
 
-                if result is not None:
-                    # update result hashes
-                    global_results[result] += 1
-                    race_results[race][result] += 1
-                    map_results[map][result] += 1
-                    difficulty_results[difficulty][result] += 1
-                else:
-                    print(f"RESULT WAS NONE ({difficulty} {race} on {map})")
-                    bad_results.append(f"RESULT WAS NONE ({difficulty} {race} on {map})")
+                    if result is not None:
+                        # update result hashes
+                        global_results[result] += 1
+                        race_results[race][result] += 1
+                        map_results[map][result] += 1
+                        difficulty_results[difficulty][result] += 1
+                    else:
+                        print(f"RESULT WAS NONE ({difficulty} {race} on {map})")
+                        bad_results.append(f"RESULT WAS NONE ({difficulty} {race} on {map})")
     
     # generate graphs and tables
     getGraphs(global_results, race_results, map_results, difficulty_results, bad_results)
@@ -222,7 +223,7 @@ if __name__ == "__main__":
         difficulty_results[difficulty] = {"Win":0, "Loss":0, "Tie":0, "Undecided":0}
     
     # different functions you can run 
-    # runSimulations()
+    runSimulations()
     # testRun()
     # generateGraphs()
     # getSpecificResults()
