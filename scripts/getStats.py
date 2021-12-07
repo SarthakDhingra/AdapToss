@@ -13,7 +13,7 @@ DIFFICULTIES = ["VeryEasy", "Easy", "Medium", "MediumHard", "Hard", "HardVeryHar
 
 # if you want to just run one specific configuration
 def testRun():
-    result = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", "zerg", "-d", "Hard", "-m", "BelShirVestigeLE.SC2Map"], stdout=subprocess.PIPE)
+    result = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", "protoss", "-d", "Hard", "-m", "CactusValleyLE.SC2Map"], stdout=subprocess.PIPE)
     parseOutput(str(result.stdout))
 
 # driver to run all simulation
@@ -41,6 +41,9 @@ def runSimulations():
     for difficulty in DIFFICULTIES:
         difficulty_results[difficulty] = {"Win":0, "Loss":0, "Tie":0, "Undecided":0}
 
+
+    bad_results = []
+
     # run all combinations 
     for map in MAPS:
         for race in RACES:
@@ -52,14 +55,18 @@ def runSimulations():
                 # get stdout and process it
                 result = parseOutput(output)
 
-                # update result hashes
-                global_results[result] += 1
-                race_results[race][result] += 1
-                map_results[map][result] += 1
-                difficulty_results[difficulty][result] += 1
+                if result is not None:
+                    # update result hashes
+                    global_results[result] += 1
+                    race_results[race][result] += 1
+                    map_results[map][result] += 1
+                    difficulty_results[difficulty][result] += 1
+                else:
+                    print(f"RESULT WAS NONE ({difficulty} {race} on {map})")
+                    bad_results.append(f"RESULT WAS NONE ({difficulty} {race} on {map})")
 
     # generate graphs and tables
-    getGraphs(global_results, race_results, map_results, difficulty_results)
+    getGraphs(global_results, race_results, map_results, difficulty_results, bad_results)
 
 # function to get match result from stdout
 def parseOutput(stdout):
@@ -75,7 +82,7 @@ def parseOutput(stdout):
     return result
 
 # TODO: generate graphs and tables from results
-def getGraphs(glob, race, map, difficulty):
+def getGraphs(glob, race, map, difficulty, bad_results):
 
     # should print to file
     print('global results')
@@ -86,6 +93,27 @@ def getGraphs(glob, race, map, difficulty):
     print(map)
     print('difficulty results')
     print(difficulty)
+    print('bad results')
+    print(bad_results)
+
+
+    file = open("output/results.txt", "w") 
+    file.write(f'global = {str(glob)}') 
+    file.write('\n')
+    file.write('\n')
+    file.write(f'race = {str(race)}')  
+    file.write('\n')
+    file.write('\n')
+    file.write(f'map = {str(map)}')  
+    file.write('\n')
+    file.write('\n')
+    file.write(f'difficulty = {str(difficulty)}')  
+    file.write('\n')
+    file.write('\n')
+    file.write(f'bad_results = {str(bad_results)}')  
+    file.write('\n')
+    file.write('\n')
+    file.close() 
 
 
     for key in map:
@@ -133,34 +161,34 @@ def getGraphs(glob, race, map, difficulty):
 
     
 if __name__ == "__main__":
-    #runSimulations()
+    runSimulations()
     #testRun()
 
-    glob = {'Win': 47, 'Loss': 43, 'Tie': 0, 'Undecided': 0}
+    # glob = {'Win': 47, 'Loss': 43, 'Tie': 0, 'Undecided': 0}
 
-    race = {
-        'zerg': {'Win': 14, 'Loss': 16, 'Tie': 0, 'Undecided': 0}, 
-        'protoss': {'Win': 17, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 
-        'terran': {'Win': 16, 'Loss': 14, 'Tie': 0, 'Undecided': 0}
-    }
+    # race = {
+    #     'zerg': {'Win': 14, 'Loss': 16, 'Tie': 0, 'Undecided': 0}, 
+    #     'protoss': {'Win': 17, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 
+    #     'terran': {'Win': 16, 'Loss': 14, 'Tie': 0, 'Undecided': 0}
+    # }
 
-    map = {
-        'CactusValleyLE.SC2Map': {'Win': 16, 'Loss': 14, 'Tie': 0, 'Undecided': 0}, 
-        'BelShirVestigeLE.SC2Map': {'Win': 17, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 
-        'ProximaStationLE.SC2Map': {'Win': 14, 'Loss': 16, 'Tie': 0, 'Undecided': 0}
-    }
+    # map = {
+    #     'CactusValleyLE.SC2Map': {'Win': 16, 'Loss': 14, 'Tie': 0, 'Undecided': 0}, 
+    #     'BelShirVestigeLE.SC2Map': {'Win': 17, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 
+    #     'ProximaStationLE.SC2Map': {'Win': 14, 'Loss': 16, 'Tie': 0, 'Undecided': 0}
+    # }
 
-    difficulty = {
-        'VeryEasy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
-        'Easy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
-        'Medium': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
-        'MediumHard': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
-        'Hard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}, 
-        'HardVeryHard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}, 
-        'VeryHard': {'Win': 3, 'Loss': 6, 'Tie': 0, 'Undecided': 0}
-    }
+    # difficulty = {
+    #     'VeryEasy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
+    #     'Easy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
+    #     'Medium': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
+    #     'MediumHard': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
+    #     'Hard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}, 
+    #     'HardVeryHard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}, 
+    #     'VeryHard': {'Win': 3, 'Loss': 6, 'Tie': 0, 'Undecided': 0}
+    # }
 
-    getGraphs(glob, race, map, difficulty)
+    # getGraphs(glob, race, map, difficulty)
 
 
 # TODO
