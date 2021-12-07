@@ -10,9 +10,9 @@ void BasicSc2Bot::OnGameStart() {
 	InitData();
 	InitWarpInLocation();
 
-	scouting_system.Init(Observation(), Actions(),exp_loc);
+	scouting_system.Init(Observation(), Actions(), base_locs);
 	defense_system.Init(Observation(), Actions());
-	attack_system.Init(Observation(), Actions(), exp_loc);
+	attack_system.Init(Observation(), Actions(), base_locs);
 	slander_system.Init(Observation(), Actions());
 
 	return;
@@ -83,17 +83,19 @@ void BasicSc2Bot::OnStep() {
 }
 
 void BasicSc2Bot::InitData() {
-	// Create a vector with all possible base locations in the map
-	Units poss_geysers = Observation()->GetUnits(Unit::Alliance::Neutral);		// gets neutral units
+	
+	// Create a vector with all possible expansion locations in the map
+	expo_spots = search::CalculateExpansionLocations(Observation(), Query());
+	
 	const GameInfo& game_info = Observation()->GetGameInfo();
 	for (const Point2D& sl : game_info.start_locations)
 	{
-		exp_loc.push_back(Point3D(sl.x, sl.y, 1));
+		base_locs.push_back(Point3D(sl.x, sl.y, 1));
 	}
 
-	for (const Point3D& exp : search::CalculateExpansionLocations(Observation(), Query()))
+	for (const Point3D& exp : expo_spots)
 	{
-		exp_loc.push_back(exp);
+		base_locs.push_back(exp);
 	}
 
 	supply_thresholds = {
@@ -113,6 +115,7 @@ void BasicSc2Bot::InitData() {
 		{"twilight_council", 1},
 		{"dark_shrine", 1},
 		{"stargate", 1},
+		{"probe", 100}
 	};
 
 	supply_scaling = {
@@ -345,7 +348,8 @@ bool BasicSc2Bot::CheckHarvesterStatus()
 		}
 		else if (unit->unit_type == UNIT_TYPEID::PROTOSS_NEXUS)
 		{
-			if (unit->ideal_harvesters > unit->assigned_harvesters && unit->orders.empty())
+			bool under_probe_limit = CountUnitType(UNIT_TYPEID::PROTOSS_PROBE) < unit_limits["probe"];
+			if (unit->ideal_harvesters > unit->assigned_harvesters && unit->orders.empty() && under_probe_limit)
 			{
 				Actions()->UnitCommand(unit, ABILITY_ID::TRAIN_PROBE);
 			}
@@ -602,10 +606,8 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	}
 	else if (structure_type == UNIT_TYPEID::PROTOSS_NEXUS)
 	{
-		QueryInterface* query = Query();
-		std::vector<Point3D> expoSpots = search::CalculateExpansionLocations(observation, Query());
 		std::vector<Point3D> validExpos;
-		for (Point3D expoSpot : expoSpots)
+		for (Point3D expoSpot : expo_spots)
 		{
 			if (Query()->Placement(ability_type_for_structure, Point2D(expoSpot.x, expoSpot.y)))
 			{

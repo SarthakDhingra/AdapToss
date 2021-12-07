@@ -16,6 +16,6 @@ public:
 private:
 	const ObservationInterface* observation = nullptr;
 	ActionInterface* actions = nullptr;
-	std::vector<Point3D> exp_locs;
+	std::vector<Point3D> base_locs;
 	Units attack_units;
 };
