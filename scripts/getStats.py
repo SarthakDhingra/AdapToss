@@ -5,6 +5,7 @@
 import subprocess
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.ticker import MaxNLocator
 
 # all possible settings
 MAPS = ["CactusValleyLE.SC2Map", "BelShirVestigeLE.SC2Map", "ProximaStationLE.SC2Map"]
@@ -44,26 +45,54 @@ def runSimulations():
 
     bad_results = []
 
-    # run all combinations 
-    for map in MAPS:
-        for race in RACES:
-            for difficulty in DIFFICULTIES:
-                # print for ourselves
-                print(f"currently processing enemy: {difficulty} {race} on {map}")
-                # run simulation
-                output = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
-                # get stdout and process it
-                result = parseOutput(output)
+    # # run all combinations 
+    # for map in MAPS:
+    #     for race in RACES:
+    #         for difficulty in DIFFICULTIES:
+    #             # print for ourselves
+    #             print(f"currently processing enemy: {difficulty} {race} on {map}")
+    #             # run simulation
+    #             output = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
+    #             # get stdout and process it
+    #             result = parseOutput(output)
 
-                if result is not None:
-                    # update result hashes
-                    global_results[result] += 1
-                    race_results[race][result] += 1
-                    map_results[map][result] += 1
-                    difficulty_results[difficulty][result] += 1
-                else:
-                    print(f"RESULT WAS NONE ({difficulty} {race} on {map})")
-                    bad_results.append(f"RESULT WAS NONE ({difficulty} {race} on {map})")
+    #             if result is not None:
+    #                 # update result hashes
+    #                 global_results[result] += 1
+    #                 race_results[race][result] += 1
+    #                 map_results[map][result] += 1
+    #                 difficulty_results[difficulty][result] += 1
+    #             else:
+    #                 print(f"RESULT WAS NONE ({difficulty} {race} on {map})")
+    #                 bad_results.append(f"RESULT WAS NONE ({difficulty} {race} on {map})")
+    
+    # bad output 
+
+    messed = [
+        [ "VeryEasy", "zerg",  "BelShirVestigeLE.SC2Map"], # run this again
+    ]
+
+
+    
+
+    for difficulty, race, map in messed:
+        print(f"currently processing enemy: {difficulty} {race} on {map}")
+        # run simulation
+        output = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
+        # get stdout and process it
+        result = parseOutput(output)
+
+        if result is not None:
+            # update result hashes
+            global_results[result] += 1
+            race_results[race][result] += 1
+            map_results[map][result] += 1
+            difficulty_results[difficulty][result] += 1
+        else:
+            print(f"RESULT WAS NONE ({difficulty} {race} on {map})")
+            print('test info')
+            print(output)
+            bad_results.append(f"RESULT WAS NONE ({difficulty} {race} on {map})")
 
     # generate graphs and tables
     getGraphs(global_results, race_results, map_results, difficulty_results, bad_results)
@@ -146,11 +175,12 @@ def getGraphs(glob, race, map, difficulty, bad_results):
         # Add some text for labels, title and custom x-axis tick labels, etc.
         ax.set_ylabel('Quantity')
         ax.set_xlabel(name)
-        ax.legend()
+        ax.legend(loc='upper right')
         ax.set_xticks(x, categories)
 
         ax.bar_label(rects1, padding=1)
         ax.bar_label(rects2, padding=1)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
         fig.tight_layout()
         
@@ -161,34 +191,34 @@ def getGraphs(glob, race, map, difficulty, bad_results):
 
     
 if __name__ == "__main__":
-    runSimulations()
+    #runSimulations()
     #testRun()
 
-    # glob = {'Win': 47, 'Loss': 43, 'Tie': 0, 'Undecided': 0}
+    glob = {'Win': 57, 'Loss': 6, 'Tie': 0, 'Undecided': 0}
 
-    # race = {
-    #     'zerg': {'Win': 14, 'Loss': 16, 'Tie': 0, 'Undecided': 0}, 
-    #     'protoss': {'Win': 17, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 
-    #     'terran': {'Win': 16, 'Loss': 14, 'Tie': 0, 'Undecided': 0}
-    # }
+    race = {
+        'zerg': {'Win': 18, 'Loss': 3, 'Tie': 0, 'Undecided': 0}, 
+        'protoss': {'Win': 19, 'Loss': 2, 'Tie': 0, 'Undecided': 0}, 
+        'terran': {'Win': 20, 'Loss': 1, 'Tie': 0, 'Undecided': 0}
+    }
 
-    # map = {
-    #     'CactusValleyLE.SC2Map': {'Win': 16, 'Loss': 14, 'Tie': 0, 'Undecided': 0}, 
-    #     'BelShirVestigeLE.SC2Map': {'Win': 17, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 
-    #     'ProximaStationLE.SC2Map': {'Win': 14, 'Loss': 16, 'Tie': 0, 'Undecided': 0}
-    # }
+    map = {
+        'CactusValleyLE.SC2Map': {'Win': 19, 'Loss': 2, 'Tie': 0, 'Undecided': 0}, 
+        'BelShirVestigeLE.SC2Map': {'Win': 20, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
+        'ProximaStationLE.SC2Map': {'Win': 18, 'Loss': 3, 'Tie': 0, 'Undecided': 0}
+    }
 
-    # difficulty = {
-    #     'VeryEasy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
-    #     'Easy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
-    #     'Medium': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
-    #     'MediumHard': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
-    #     'Hard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}, 
-    #     'HardVeryHard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}, 
-    #     'VeryHard': {'Win': 3, 'Loss': 6, 'Tie': 0, 'Undecided': 0}
-    # }
+    difficulty = {
+        'VeryEasy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
+        'Easy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
+        'Medium': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
+        'MediumHard': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
+        'Hard': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
+        'HardVeryHard': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
+        'VeryHard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}
+    }
 
-    # getGraphs(glob, race, map, difficulty)
+    getGraphs(glob, race, map, difficulty, [])
 
 
 # TODO
