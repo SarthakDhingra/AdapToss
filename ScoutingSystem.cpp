@@ -9,7 +9,7 @@ void ScoutingSystem::Init(const ObservationInterface* obs, ActionInterface* act,
 	// Scouting system needs to be initialized on game start rather than at construction
 	observation = obs;
 	actions = act;
-	exp_loc = locs;
+	base_locs = locs;
 	enemy_race = observation->GetGameInfo().player_info[1].race_requested;
 
 	InitScoutingData();
@@ -116,14 +116,14 @@ void ScoutingSystem::SendScout(const Unit * unit, bool dom_mode) {
 		scout_locs.pop();
 		scout_locs.push(top);
 	}
-	else if (tasks.count(scout_unit) == 0 || Distance2D(scout_unit->pos, exp_loc[tasks[scout_unit]]) < 6.0f){
+	else if (tasks.count(scout_unit) == 0 || Distance2D(scout_unit->pos, base_locs[tasks[scout_unit]]) < 6.0f){
 		//check if our scout already has a task or if close enough to reassign
 		//send scout
-		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, exp_loc[pos]);
+		actions->UnitCommand(scout_unit, ABILITY_ID::MOVE_MOVE, base_locs[pos]);
 		//when giving a task store that in the map
 		tasks[scout_unit] = pos;
 		//increment to next expansion location
-		pos = (pos + 1) % exp_loc.size();
+		pos = (pos + 1) % base_locs.size();
 		
 	}
 
