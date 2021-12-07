@@ -1,0 +1,10 @@
+global = {'Win': 1, 'Loss': 0, 'Tie': 0, 'Undecided': 0}
+
+race = {'zerg': {'Win': 1, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'protoss': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'terran': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}}
+
+map = {'CactusValleyLE.SC2Map': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'BelShirVestigeLE.SC2Map': {'Win': 1, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'ProximaStationLE.SC2Map': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}}
+
+difficulty = {'VeryEasy': {'Win': 1, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'Easy': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'Medium': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'MediumHard': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'Hard': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'HardVeryHard': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'VeryHard': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}}
+
+bad_results = []
+
