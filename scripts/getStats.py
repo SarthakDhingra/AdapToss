@@ -225,7 +225,7 @@ if __name__ == "__main__":
     # runSimulations()
     # testRun()
     # generateGraphs()
-    getSpecificResults()
+    # getSpecificResults()
 
 
 # TODO
