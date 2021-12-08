@@ -287,7 +287,7 @@ const Unit* BasicSc2Bot::FindNearestMineralPatch(const Point2D& start) {
 	float distance = std::numeric_limits<float>::max();
 	const Unit* target = nullptr;
 	for (const auto& u : units) {
-		if (u->unit_type == UNIT_TYPEID::NEUTRAL_MINERALFIELD) {
+		if (u->mineral_contents) {
 			float d = DistanceSquared2D(u->pos, start);
 			if (d < distance) {
 				distance = d;
@@ -456,7 +456,6 @@ void BasicSc2Bot::OnWarpGateIdle(const Unit* unit) {
 	
 	if (mineral_excess || (!expanding && CountUnitType(UNIT_TYPEID::PROTOSS_DARKTEMPLAR) < Observation()->GetFoodUsed() / supply_scaling["dark_templar"]))
 	{
-		std::cout << "warping dt" << std::endl;
 		Actions()->UnitCommand(unit,
 			ABILITY_ID::TRAINWARP_DARKTEMPLAR,
 			Point2D(warp_in_source.position.x + rx * warp_in_source.radius, warp_in_source.position.y + ry * warp_in_source.radius));

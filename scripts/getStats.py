@@ -15,7 +15,7 @@ import subprocess
 # all possible settings
 MAPS = ["CactusValleyLE.SC2Map", "BelShirVestigeLE.SC2Map", "ProximaStationLE.SC2Map"]
 RACES = ["zerg" , "protoss", "terran"]
-DIFFICULTIES = ["Hard", "HardVeryHard", "VeryHard"] #["VeryEasy", "Easy", "Medium", "MediumHard", "Hard", "HardVeryHard", "VeryHard"] # "CheatVision", "CheatMoney", "CheatInsane"]
+DIFFICULTIES = ["VeryHard"] #["VeryEasy", "Easy", "Medium", "MediumHard", "Hard", "HardVeryHard", "VeryHard"] # "CheatVision", "CheatMoney", "CheatInsane"]
 
 # global results hash
 global_results = {"Win":0, "Loss":0, "Tie":0, "Undecided":0}
