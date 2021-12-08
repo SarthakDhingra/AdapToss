@@ -661,9 +661,10 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 
 		for (const PowerSource& powersource : observation->GetPowerSources())
 		{
-				Actions()->UnitCommand(unit_to_build,
-					ability_type_for_structure,
-					Point2D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius));
+			Actions()->UnitCommand(unit_to_build,
+				ability_type_for_structure,
+				Point2D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius));
+			return true;
 		}
 		
 	}
