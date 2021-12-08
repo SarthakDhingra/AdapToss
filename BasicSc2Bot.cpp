@@ -613,6 +613,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 		if (validExpos.empty())
 		{
 			no_more_expos = true;
+			expanding = false;
 			return false;
 		}
 
