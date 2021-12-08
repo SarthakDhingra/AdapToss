@@ -432,6 +432,11 @@ void BasicSc2Bot::OnWarpGateIdle(const Unit* unit) {
 	// get random warp-in position adjustment
 	float rx = GetRandomScalar();
 	float ry = GetRandomScalar();
+
+	// early-out if there are no valid power sources
+	if (Observation()->GetPowerSources().size() == 0) {
+		return;
+	}
 	
 	// warp in at random power source by default
 	int ri = GetRandomInteger(0, Observation()->GetPowerSources().size() - 1);
