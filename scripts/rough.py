@@ -8,25 +8,25 @@ def standard_deviation():
     values = []
 
     # 57 wins
-    for i in range(57):
+    for i in range(5):
         values.append(1)
     
     # 6 losses
-    for i in range(6):
+    for i in range(4):
         values.append(0)
     
     # numerator
     total = 0
 
     # mean
-    mean = 57/63
+    mean = 5/9
 
     # sum up numerator of standard deviation equation
     for val in values:
         total += (val-mean)**2
 
     # get standard deviation
-    return math.sqrt(total/63)
+    return math.sqrt(total/8)
 
 
 if __name__ == '__main__':

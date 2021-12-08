@@ -1,16 +1,21 @@
 #! /usr/bin/env python3
 
+# NOTES - How to run the script
 # script is intended to be ran on windows from the scripts directory
-# chmod +x getStats.py; ./getStats.py
+# cd scripts
+# chmod +x getStats.py;
+# ./getStats.py
+
 import subprocess
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-import numpy as np
+# commented out libraries for group testing
+# import matplotlib.pyplot as plt
+# from matplotlib.ticker import MaxNLocator
+# import numpy as np
 
 # all possible settings
 MAPS = ["CactusValleyLE.SC2Map", "BelShirVestigeLE.SC2Map", "ProximaStationLE.SC2Map"]
 RACES = ["zerg" , "protoss", "terran"]
-DIFFICULTIES = ["VeryEasy", "Easy", "Medium", "MediumHard", "Hard", "HardVeryHard", "VeryHard"] # "CheatVision", "CheatMoney", "CheatInsane"]
+DIFFICULTIES = ["Hard", "HardVeryHard", "VeryHard"] #["VeryEasy", "Easy", "Medium", "MediumHard", "Hard", "HardVeryHard", "VeryHard"] # "CheatVision", "CheatMoney", "CheatInsane"]
 
 # global results hash
 global_results = {"Win":0, "Loss":0, "Tie":0, "Undecided":0}
@@ -43,26 +48,27 @@ def testRun():
 # driver to run all simulation
 def runSimulations():
 
-    # run all combinations 
-    for map in MAPS:
-        for race in RACES:
-            for difficulty in DIFFICULTIES:
-                # print for ourselves
-                print(f"currently processing enemy: {difficulty} {race} on {map}")
-                # run simulation
-                output = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
-                # get stdout and process it
-                result = parseOutput(output)
+    # run all combinations 5 times (9*45) 
+    for i in range(5):
+        for map in MAPS:
+            for race in RACES:
+                for difficulty in DIFFICULTIES:
+                    # print for ourselves
+                    print(f"currently processing enemy: {difficulty} {race} on {map}")
+                    # run simulation
+                    output = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
+                    # get stdout and process it
+                    result = parseOutput(output)
 
-                if result is not None:
-                    # update result hashes
-                    global_results[result] += 1
-                    race_results[race][result] += 1
-                    map_results[map][result] += 1
-                    difficulty_results[difficulty][result] += 1
-                else:
-                    print(f"RESULT WAS NONE ({difficulty} {race} on {map})")
-                    bad_results.append(f"RESULT WAS NONE ({difficulty} {race} on {map})")
+                    if result is not None:
+                        # update result hashes
+                        global_results[result] += 1
+                        race_results[race][result] += 1
+                        map_results[map][result] += 1
+                        difficulty_results[difficulty][result] += 1
+                    else:
+                        print(f"RESULT WAS NONE ({difficulty} {race} on {map})")
+                        bad_results.append(f"RESULT WAS NONE ({difficulty} {race} on {map})")
     
     # generate graphs and tables
     getGraphs(global_results, race_results, map_results, difficulty_results, bad_results)
@@ -76,6 +82,7 @@ def getSpecificResults():
 
     # run desired simulations only
     for difficulty, race, map in runs:
+
         print(f"currently processing enemy: {difficulty} {race} on {map}")
         # run simulation
         output = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
@@ -90,8 +97,10 @@ def getSpecificResults():
             difficulty_results[difficulty][result] += 1
         else:
             print(f"RESULT WAS NONE ({difficulty} {race} on {map})")
-            print('test info')
+            print()
+            print('stdout:')
             print(output)
+            print()
             bad_results.append(f"RESULT WAS NONE ({difficulty} {race} on {map})")
 
     # generate graphs and tables
@@ -143,50 +152,50 @@ def getGraphs(glob, race, map, difficulty, bad_results):
     file.write('\n')
     file.close() 
 
+    # commented out for group testing, will uncomment later
+    # # prepare data
+    # for key in map:
+    #     map[key.replace('.SC2Map', '')] = map.pop(key)
 
-    # prepare data
-    for key in map:
-        map[key.replace('.SC2Map', '')] = map.pop(key)
+    # categorical_results = {"Race": race, "Map":map, "Difficulty": difficulty}
 
-    categorical_results = {"Race": race, "Map":map, "Difficulty": difficulty}
-
-    for name, results in categorical_results.items():
+    # for name, results in categorical_results.items():
     
-        categories = list(results.keys())
-        wins = []
-        losses = []
-        for category in categories:
-            wins.append(results[category]['Win'])
-            losses.append(results[category]['Loss'])
+    #     categories = list(results.keys())
+    #     wins = []
+    #     losses = []
+    #     for category in categories:
+    #         wins.append(results[category]['Win'])
+    #         losses.append(results[category]['Loss'])
         
-        # the label locations
-        x = np.arange(len(categories))  
+    #     # the label locations
+    #     x = np.arange(len(categories))  
         
-        # the width of the bars
-        width = 0.35  
+    #     # the width of the bars
+    #     width = 0.35  
 
-        # clear plot
-        plt.clf()
-        fig, ax = plt.subplots()
-        rects1 = ax.bar(x - width/2, wins, width, label='Wins')
-        rects2 = ax.bar(x + width/2, losses, width, label='Losses')
+    #     # clear plot
+    #     plt.clf()
+    #     fig, ax = plt.subplots()
+    #     rects1 = ax.bar(x - width/2, wins, width, label='Wins')
+    #     rects2 = ax.bar(x + width/2, losses, width, label='Losses')
 
-        # Add some text for labels, title and custom x-axis tick labels, etc.
-        ax.set_ylabel('Quantity')
-        ax.set_xlabel(name)
-        ax.legend(loc='upper right')
-        ax.set_xticks(x, categories)
+    #     # Add some text for labels, title and custom x-axis tick labels, etc.
+    #     ax.set_ylabel('Quantity')
+    #     ax.set_xlabel(name)
+    #     ax.legend(loc='upper right')
+    #     ax.set_xticks(x, categories)
 
-        ax.bar_label(rects1, padding=1)
-        ax.bar_label(rects2, padding=1)
-        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    #     ax.bar_label(rects1, padding=1)
+    #     ax.bar_label(rects2, padding=1)
+    #     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-        fig.tight_layout()
+    #     fig.tight_layout()
         
-        if name == "Difficulty":
-            plt.xticks(rotation=45)
+    #     if name == "Difficulty":
+    #         plt.xticks(rotation=45)
 
-        plt.savefig(f'output/{name}.png', bbox_inches='tight')
+    #     plt.savefig(f'output/{name}.png', bbox_inches='tight')
 
 def generateGraphs():
     #current results
@@ -220,9 +229,11 @@ if __name__ == "__main__":
 
     for difficulty in DIFFICULTIES:
         difficulty_results[difficulty] = {"Win":0, "Loss":0, "Tie":0, "Undecided":0}
-    
+
+    # NOTES
     # different functions you can run 
-    # runSimulations()
+    # to make sure things are working properly, run testRun() and then generateGraph() to make sure no errors are thrown
+    runSimulations()
     # testRun()
     # generateGraphs()
     # getSpecificResults()
