@@ -54,7 +54,7 @@ def runSimulations():
             for race in RACES:
                 for difficulty in DIFFICULTIES:
                     # print for ourselves
-                    print(f"currently processing enemy: {difficulty} {race} on {map}")
+                    print(f"currently processing enemy: iteration {i} {difficulty} {race} on {map}")
                     # run simulation
                     output = subprocess.run(["./../build/bin/BasicSc2Bot.exe", "-c", "-a", race, "-d", difficulty, "-m", map], stdout=subprocess.PIPE)
                     # get stdout and process it
