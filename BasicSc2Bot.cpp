@@ -174,7 +174,7 @@ bool BasicSc2Bot::TryBuildExpo()
 	bool food_nexus_ratio = (nexus_count == 0) || ((float)observation->GetFoodUsed() / (float)nexus_count) > (supply_scaling["nexus"] + (3 * nexus_count));
 	bool high_minerals = observation->GetMinerals() > mineral_counts["expo"]; 
 	
-	if (food_nexus_ratio || high_minerals)
+	if (!no_more_expos && ( food_nexus_ratio || high_minerals))
 	{
 		expanding = true;
 		if (enough_minerals) 
@@ -612,6 +612,8 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 
 		if (validExpos.empty())
 		{
+			no_more_expos = true;
+			expanding = false;
 			return false;
 		}
 

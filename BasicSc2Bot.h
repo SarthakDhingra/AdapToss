@@ -65,6 +65,7 @@ private:
 	Point2D warp_in_position;
 	bool dom_mode = false;
 	bool expanding = false;
+	bool no_more_expos = false;
 	
 	std::map<std::string, int> supply_thresholds;
 	std::map<std::string, int> unit_limits;
