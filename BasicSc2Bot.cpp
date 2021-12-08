@@ -127,7 +127,7 @@ void BasicSc2Bot::InitData() {
 
 	mineral_counts = {
 		{"expo", 1200},
-		{"gateway", 1700}
+		{"gateway", 1000}
 	};
 
 	sq_distances = {
@@ -172,11 +172,17 @@ bool BasicSc2Bot::TryBuildExpo()
 	// builds a nexus whenever we have no nexus, or if the food to nexus ratio is too high
 	bool enough_minerals = observation->GetMinerals() >= 400;
 	bool food_nexus_ratio = (nexus_count == 0) || ((float)observation->GetFoodUsed() / (float)nexus_count) > (supply_scaling["nexus"] + (3 * nexus_count));
-	bool high_minerals = observation->GetMinerals() > mineral_counts["expo"];
+	bool high_minerals = observation->GetMinerals() > mineral_counts["expo"]; 
 	
-	if (enough_minerals && food_nexus_ratio || high_minerals)
+	if (food_nexus_ratio || high_minerals)
 	{
-		return TryBuildStructure(ABILITY_ID::BUILD_NEXUS, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_NEXUS);
+		expanding = true;
+		if (enough_minerals) 
+		{
+
+			return TryBuildStructure(ABILITY_ID::BUILD_NEXUS, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_NEXUS);
+		}
+
 	}
 	return false;
 }
@@ -235,9 +241,9 @@ bool BasicSc2Bot::TryBuildGateway()
 
 	bool food_gateway_ratio = gateway_count < Observation()->GetFoodUsed() / (supply_scaling["gateway"] + (4 * gateway_count));
 	bool gateway_nexus_ratio = gateway_count < 2 * nexus_count;
-	bool high_minerals = Observation()->GetMinerals() > mineral_counts["gateway"];
+	bool high_minerals = Observation()->GetVespene() > mineral_counts["gateway"] && Observation()->GetMinerals() > mineral_counts["gateway"];
 
-	if (food_gateway_ratio && gateway_nexus_ratio || high_minerals)
+	if (!expanding && (food_gateway_ratio && gateway_nexus_ratio || high_minerals))
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_GATEWAY);
 	}
@@ -445,7 +451,7 @@ void BasicSc2Bot::OnWarpGateIdle(const Unit* unit) {
 		}
 	}
 	
-	if (CountUnitType(UNIT_TYPEID::PROTOSS_DARKTEMPLAR) < Observation()->GetFoodUsed() / supply_scaling["dark_templar"])
+	if (!expanding && CountUnitType(UNIT_TYPEID::PROTOSS_DARKTEMPLAR) < Observation()->GetFoodUsed() / supply_scaling["dark_templar"])
 	{
 		Actions()->UnitCommand(unit,
 			ABILITY_ID::TRAINWARP_DARKTEMPLAR,
@@ -571,35 +577,24 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 		Units poss_geysers = observation->GetUnits(Unit::Alliance(Unit::Alliance::Neutral));
 		Units nexi = observation->GetUnits(Unit::Alliance(Unit::Alliance::Self), IsUnit(UNIT_TYPEID::PROTOSS_NEXUS));
 
-		std::vector<UNIT_TYPEID> gas_ids;
-		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_VESPENEGEYSER);
-		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SHAKURASVESPENEGEYSER);
-		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_RICHVESPENEGEYSER);
-		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PURIFIERVESPENEGEYSER);
-		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_PROTOSSVESPENEGEYSER);
-		gas_ids.push_back(UNIT_TYPEID::NEUTRAL_SPACEPLATFORMGEYSER);
-
 		for (const auto& poss_geyser : poss_geysers)
 		{
-			for (UNIT_TYPEID gas_id : gas_ids)				
+			if (poss_geyser->vespene_contents)					// makes sure target is a geyser
 			{
-				if (poss_geyser->unit_type == gas_id)					// makes sure target is a geyser
+				bool close_to_nexus = false;
+				for (const auto& nexus : nexi)
 				{
-					bool close_to_nexus = false;
-					for (const auto& nexus : nexi)
+					if (SqDist(nexus, poss_geyser) < sq_distances["geyser"])		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
 					{
-						if (SqDist(nexus, poss_geyser) < sq_distances["geyser"])		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
-						{
-							close_to_nexus = true;
-						}
+						close_to_nexus = true;
 					}
-					if (close_to_nexus)									// assigns the build task if we are near a nexus.
-					{
-						Actions()->UnitCommand(unit_to_build,
-							ability_type_for_structure,
-							poss_geyser);
-						return true;
-					}
+				}
+				if (close_to_nexus)									// assigns the build task if we are near a nexus.
+				{
+					Actions()->UnitCommand(unit_to_build,
+						ability_type_for_structure,
+						poss_geyser);
+					return true;
 				}
 			}
 		}
@@ -638,6 +633,7 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 		Actions()->UnitCommand(unit_to_build,
 			ability_type_for_structure,
 			closestPoint);
+		expanding = false;
 		return true;
 	}
 	else
