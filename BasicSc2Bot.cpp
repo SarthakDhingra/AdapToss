@@ -79,6 +79,15 @@ void BasicSc2Bot::OnStep() {
 	if (InDominationMode()){
 		TryBuildStargate();
 	}
+
+	if (!builder || !builder->is_alive)
+	{
+		AssignBuilder();
+	}
+	if (builder && builder->is_alive && !building_build_queue.empty())
+	{
+		AssignBuildOrder(builder);
+	}
 	return;
 }
 
@@ -127,17 +136,18 @@ void BasicSc2Bot::InitData() {
 
 	mineral_counts = {
 		{"expo", 1200},
-		{"gateway", 1000}
+		{"gateway", 1000},
+		{"dark_templar", 800}
 	};
 
 	sq_distances = {
-		{"geyser", 70},
+		{"geyser", 50},
 	};
 }
 
 bool BasicSc2Bot::TryBuildPylon()
 {
-	if (Observation()->GetFoodCap() - Observation()->GetFoodUsed() < supply_scaling["pylon"]
+	if (Observation()->GetMinerals() >= 100 && Observation()->GetFoodCap() - Observation()->GetFoodUsed() < supply_scaling["pylon"]
 		&& Observation()->GetFoodCap() <= 200)
 	{
 		// check for building gateway before more pylons
@@ -154,10 +164,11 @@ bool BasicSc2Bot::TryBuildGeyser()
 {
 	bool enough_workers = Observation()->GetFoodWorkers() > supply_thresholds["geyser"];
 	bool enough_minerals = Observation()->GetMinerals() >= 75;
-	bool geyser_nexus_ratio = CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < 1 + (2 * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS));
+	bool geyser_nexus_ratio = CountUnitType(UNIT_TYPEID::PROTOSS_ASSIMILATOR) < (2 * CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS));
 	
 	if (enough_workers && enough_minerals && geyser_nexus_ratio)
 	{
+		std::cout << "geyser attempt" << std::endl;
 		return TryBuildStructure(ABILITY_ID::BUILD_ASSIMILATOR, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_ASSIMILATOR);
 	}
 	return false;
@@ -239,11 +250,11 @@ bool BasicSc2Bot::TryBuildGateway()
 	int gateway_count = CountUnitType(UNIT_TYPEID::PROTOSS_GATEWAY);
 	int nexus_count = CountUnitType(UNIT_TYPEID::PROTOSS_NEXUS);
 
-	bool food_gateway_ratio = gateway_count < Observation()->GetFoodUsed() / (supply_scaling["gateway"] + (4 * gateway_count));
+	bool food_gateway_ratio = gateway_count < Observation()->GetFoodWorkers() / (supply_scaling["gateway"] + (4 * gateway_count));
 	bool gateway_nexus_ratio = gateway_count < 2 * nexus_count;
 	bool high_minerals = Observation()->GetVespene() > mineral_counts["gateway"] && Observation()->GetMinerals() > mineral_counts["gateway"];
 
-	if (!expanding && (food_gateway_ratio && gateway_nexus_ratio || high_minerals))
+	if ((!expanding && food_gateway_ratio && gateway_nexus_ratio) || high_minerals)
 	{
 		return TryBuildStructure(ABILITY_ID::BUILD_GATEWAY, UNIT_TYPEID::PROTOSS_PROBE, UNIT_TYPEID::PROTOSS_GATEWAY);
 	}
@@ -320,7 +331,7 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 			}
 		}
 
-		if (unit->orders.empty() || (is_harvesting && not_at_geyser))
+		if ((unit->orders.empty() || (is_harvesting && not_at_geyser)) && unit->tag != builder->tag)
 		{
 			units_to_assign.push_back(unit);
 			if (units_to_assign.size() >= geyser->ideal_harvesters - geyser->assigned_harvesters)
@@ -405,11 +416,22 @@ void BasicSc2Bot::OnUnitIdle(const Unit* unit) {
 		}
 
 		case UNIT_TYPEID::PROTOSS_PROBE: {
-			const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
-			if (!mineral_target) {
-				break;
+			if (unit->orders.empty())
+			{
+				if (!builder || !builder->is_alive)
+				{
+					AssignBuilder();
+				}
+				else if (builder->tag != unit->tag)
+				{
+					const Unit* mineral_target = FindNearestMineralPatch(unit->pos);
+					if (!mineral_target) {
+						break;
+					}
+					Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
+				}
+
 			}
-			Actions()->UnitCommand(unit, ABILITY_ID::SMART, mineral_target);
 			break;
 		}
 
@@ -450,8 +472,10 @@ void BasicSc2Bot::OnWarpGateIdle(const Unit* unit) {
 			break;
 		}
 	}
+
+	bool mineral_excess = Observation()->GetMinerals() > mineral_counts["dark_templar"];
 	
-	if (!expanding && CountUnitType(UNIT_TYPEID::PROTOSS_DARKTEMPLAR) < Observation()->GetFoodUsed() / supply_scaling["dark_templar"])
+	if ((!expanding && CountUnitType(UNIT_TYPEID::PROTOSS_DARKTEMPLAR) < Observation()->GetFoodUsed() / supply_scaling["dark_templar"]) || mineral_excess)
 	{
 		Actions()->UnitCommand(unit,
 			ABILITY_ID::TRAINWARP_DARKTEMPLAR,
@@ -523,6 +547,71 @@ float BasicSc2Bot::SqDist(const Point3D& a, const Point3D& b) const
 	return x + y;
 }
 
+bool BasicSc2Bot::AssignBuildOrder(const Unit* probe)
+{
+	if (building_build_queue.front() == UNIT_TYPEID::PROTOSS_ASSIMILATOR)
+	{
+		float closest_distance;
+		const Unit* closest_geyser = NULL;
+		Point3D geyser_pos = pos_build_queue.front();
+		Units poss_geysers = Observation()->GetUnits(Unit::Alliance::Neutral);
+
+		for (const auto& poss_geyser : poss_geysers)
+		{
+			if (poss_geyser->vespene_contents)					// makes sure target is a geyser
+			{
+				{
+					if (!closest_geyser || SqDist(geyser_pos, poss_geyser->pos) < closest_distance)		// makes sure geyser is close enough to a nexus. Only loops once per gas_id
+					{
+						closest_geyser = poss_geyser;
+						closest_distance = SqDist(geyser_pos, poss_geyser->pos);
+					}
+				}
+			}
+		}
+		if (closest_geyser)
+		{
+			Actions()->UnitCommand(probe,
+				ability_build_queue.front(),
+				closest_geyser);
+		}	
+	}
+	else
+	{
+		Actions()->UnitCommand(probe,
+			ability_build_queue.front(),
+			pos_build_queue.front());
+			
+	}
+
+	ability_build_queue.pop();
+	building_build_queue.pop();
+	pos_build_queue.pop();
+
+	AssignBuilder();
+
+	//Actions()->UnitCommand(builder, ABILITY_ID::MOVE_MOVE, builder->pos);
+
+	return true;
+}
+
+// assigns a probe to be the builder probe.
+bool BasicSc2Bot::AssignBuilder()
+{
+	Units probes = Observation()->GetUnits(Unit::Alliance::Self, IsUnit(UNIT_TYPEID::PROTOSS_PROBE));
+	for (const Unit* probe : probes)
+	{
+		if (!builder || (probe->tag != scouting_system.GetScout()->tag && probe->tag != builder->tag && probe->is_alive))
+		{
+			builder = probe;
+			Actions()->UnitCommand(builder, ABILITY_ID::MOVE_MOVE, builder->pos);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_TYPEID unit_type, UNIT_TYPEID structure_type) {
 	const ObservationInterface* observation = Observation();
 	const Unit* scout = scouting_system.GetScout();
@@ -531,33 +620,51 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 	// Also get a probe to build the structure.
 	const Unit* unit_to_build = nullptr;
 	Units units = observation->GetUnits(Unit::Alliance::Self, IsUnit(unit_type));
+	Units structures = observation->GetUnits(Unit::Alliance::Self, IsUnit(structure_type));
 	if (structure_type != UNIT_TYPEID::PROTOSS_ASSIMILATOR)
 	{
-		for (const auto& unit : units)
+		for (const auto& unit : structures)
 		{	// checks if we are already building a structure of this type.
-			if (unit->unit_type == structure_type && unit->build_progress < 1.0)
+			if (unit->build_progress < 1.0)
 			{
 				return false;
 			}
 		}
 	}
 
+	// prevent multiple queuings
+	bool queued = false;
+	for (size_t i = 0; i < building_build_queue.size(); i++)
+	{
+		if (building_build_queue.front() == structure_type)
+		{
+			queued = true;
+		}
+		building_build_queue.push(building_build_queue.front());
+		building_build_queue.pop();
+	}
+
+	if (queued)
+	{
+		return false;
+	}
+
 	
 	for (const auto& unit : units) {
-		for (const auto& order : unit->orders) {
-			if (order.ability_id == ability_type_for_structure && unit->is_alive) {
-				return false;
+		if (unit->tag != scout->tag && unit->is_alive)			// makes sure it isnt the scout doing the building
+		{
+			for (const auto& order : unit->orders) {
+				if (order.ability_id == ability_type_for_structure) 
+				{
+					return false;
+				}
 			}
-		}
-
-
-		if (unit->tag != scout->tag && unit->is_alive) {
 			unit_to_build = unit;
 		}
 	}
 
-	// if no  unit assigned return false (prevents reading nullptr exception)
-	if (!unit_to_build) {
+	if (!unit_to_build)
+	{
 		return false;
 	}
 
@@ -566,15 +673,29 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 
 	if (structure_type == UNIT_TYPEID::PROTOSS_PYLON)
 	{
-		Actions()->UnitCommand(unit_to_build,
+		/*Actions()->UnitCommand(unit_to_build,
 			ability_type_for_structure,
-			Point2D(unit_to_build->pos.x + rx * 15.0f, unit_to_build->pos.y + ry * 15.0f));
+			Point2D(unit_to_build->pos.x + rx * 15.0f, unit_to_build->pos.y + ry * 15.0f));*/
+		int loops = 10;
+		while (loops && !Query()->Placement(ability_type_for_structure, Point3D(unit_to_build->pos.x + rx * 15.0f, unit_to_build->pos.y + ry * 15.0f, 1)))
+		{
+			rx = GetRandomScalar();
+			ry = GetRandomScalar();
+			loops--;
+		}
+		if (!loops)
+		{
+			return false;
+		}
+		building_build_queue.push(structure_type);
+		ability_build_queue.push(ability_type_for_structure);
+		pos_build_queue.push(Point3D(unit_to_build->pos.x + rx * 15.0f, unit_to_build->pos.y + ry * 15.0f, 1));
 		return true;
 
 	}
 	else if (structure_type == UNIT_TYPEID::PROTOSS_ASSIMILATOR)
 	{
-		Units poss_geysers = observation->GetUnits(Unit::Alliance(Unit::Alliance::Neutral));
+		Units poss_geysers = observation->GetUnits(Unit::Alliance::Neutral);
 		Units nexi = observation->GetUnits(Unit::Alliance(Unit::Alliance::Self), IsUnit(UNIT_TYPEID::PROTOSS_NEXUS));
 
 		for (const auto& poss_geyser : poss_geysers)
@@ -589,11 +710,19 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 						close_to_nexus = true;
 					}
 				}
-				if (close_to_nexus)									// assigns the build task if we are near a nexus.
+				if (close_to_nexus && Query()->Placement(ability_type_for_structure, poss_geyser->pos));									// assigns the build task if we are near a nexus.
 				{
-					Actions()->UnitCommand(unit_to_build,
-						ability_type_for_structure,
-						poss_geyser);
+					building_build_queue.push(structure_type);
+					ability_build_queue.push(ability_type_for_structure);
+					pos_build_queue.push(poss_geyser->pos);
+					std::cout << "order count: " << unit_to_build->orders.size() << std::endl;
+					//Actions()->UnitCommand(unit_to_build,
+					//	ability_type_for_structure,
+					//	poss_geyser);
+					std::cout << "geyser time" << std::endl;
+					std::cout << "builder tag: " << unit_to_build->tag << std::endl;
+					std::cout << "geyser tag: " << poss_geyser->unit_type << std::endl;
+					std::cout << "order count: " << unit_to_build->orders.size() << std::endl << std::endl;
 					return true;
 				}
 			}
@@ -630,11 +759,17 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 				closestPoint = expo;
 			}
 		}
+		if (Query()->Placement(ability_type_for_structure, closestPoint))
+		{
+			return false;
+		}
+		building_build_queue.push(structure_type);
+		ability_build_queue.push(ability_type_for_structure);
+		pos_build_queue.push(closestPoint);
 
-		observation->GetUnits(Unit::Alliance(Unit::Alliance::Self), IsUnit(unit_to_build->unit_type));
-		Actions()->UnitCommand(unit_to_build,
+		/*Actions()->UnitCommand(unit_to_build,
 			ability_type_for_structure,
-			closestPoint);
+			closestPoint);*/
 		expanding = false;
 		return true;
 	}
@@ -648,19 +783,30 @@ bool BasicSc2Bot::TryBuildStructure(ABILITY_ID ability_type_for_structure, UNIT_
 				{
 
 					if (powersource.tag != unit->tag)
-						Actions()->UnitCommand(unit_to_build,
+					{
+						int loops = 10;
+						while (loops && Query()->Placement(ability_type_for_structure,
+							Point3D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius, 1)))
+						{
+							rx = GetRandomScalar();
+							ry = GetRandomScalar();
+							loops--;
+						}
+						if (!loops)
+						{
+							return false;
+						}
+						building_build_queue.push(structure_type);
+						ability_build_queue.push(ability_type_for_structure);
+						pos_build_queue.push(Point3D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius, 1));
+						/*Actions()->UnitCommand(unit_to_build,
 							ability_type_for_structure,
-							Point2D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius));
-					return true;
+							Point2D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius));*/
+						return true;
+					}
+
 				}
 			}
-		}
-		for (const PowerSource& powersource : observation->GetPowerSources())
-		{
-			Actions()->UnitCommand(unit_to_build,
-				ability_type_for_structure,
-				Point2D(powersource.position.x + rx * powersource.radius, powersource.position.y + ry * powersource.radius));
-			return true;
 		}
 		
 	}

@@ -48,6 +48,8 @@ public:
 	bool InDominationMode();
 	bool TryBuildStargate();
 	void InitData();
+	bool AssignBuildOrder(const Unit* probe);
+	bool AssignBuilder();
 
 
 private:
@@ -72,9 +74,14 @@ private:
 	std::map<std::string, int> supply_scaling;
 	std::map<std::string, int> mineral_counts;
 	std::map<std::string, int> sq_distances;
+	std::queue<ABILITY_ID> ability_build_queue;
+	std::queue<UNIT_TYPEID> building_build_queue;
+	std::queue<Point3D> pos_build_queue;
+	//std::queue<tag> geyser_build_queue;
 
 	// Set to true to enable warp prism warp in
 	bool warp_prism_toggle = false;
+	const Unit* builder;
 };
 
 #endif
