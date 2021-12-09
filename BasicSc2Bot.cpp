@@ -324,7 +324,7 @@ bool BasicSc2Bot::AssignProbeToGas(const Unit *geyser)
 		if (unit->orders.empty() || (is_harvesting && not_at_geyser))
 		{
 			units_to_assign.push_back(unit);
-			if (units_to_assign.size() >= geyser->ideal_harvesters - geyser->assigned_harvesters)
+			if (units_to_assign.size() >= static_cast<size_t>(geyser->ideal_harvesters) - static_cast<size_t>(geyser->assigned_harvesters))
 			{
 				break;
 			}

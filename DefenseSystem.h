@@ -13,8 +13,9 @@ public:
 	size_t CountUnitType(UNIT_TYPEID unit_type);
 
 private:
-	Units defense;
-	float attack_radius;
 	const ObservationInterface* observation = nullptr;
 	ActionInterface* actions = nullptr;
+	
+	Units defense;
+	float attack_radius = 400;
 };

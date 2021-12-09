@@ -27,7 +27,7 @@ private:
 	int early_game_supply;
 	//places to scout
 	std::vector<Point3D> base_locs;
-	int pos = 0;
+	size_t pos = 0;
 	// Keep track of data that's meaningful for adjusting our strategy
 	std::map<std::string, bool> scouting_data;
 	std::queue<Point2D> scout_locs;
