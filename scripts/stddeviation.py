@@ -7,27 +7,26 @@ def standard_deviation():
     # get all win loss values
     values = []
 
-    # 57 wins
-    for i in range(5):
+    # number of wins
+    for i in range(63):
         values.append(1)
     
-    # 6 losses
-    for i in range(4):
-        values.append(0)
+    # number of losses
+    for i in range(81):
+        values.append(0)  
     
     # numerator
     total = 0
 
     # mean
-    mean = 5/9
+    mean = 63/144
 
     # sum up numerator of standard deviation equation
     for val in values:
         total += (val-mean)**2
 
     # get standard deviation
-    return math.sqrt(total/8)
-
+    return math.sqrt(total/144)
 
 if __name__ == '__main__':
     print(standard_deviation())

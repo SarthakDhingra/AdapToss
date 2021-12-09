@@ -1,10 +1,10 @@
-global = {'Win': 1, 'Loss': 0, 'Tie': 0, 'Undecided': 0}
+global = {'Win': 292, 'Loss': 139, 'Tie': 1, 'Undecided': 0}
 
-race = {'zerg': {'Win': 1, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'protoss': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'terran': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}}
+race = {'zerg': {'Win': 87, 'Loss': 57, 'Tie': 0, 'Undecided': 0}, 'protoss': {'Win': 98, 'Loss': 46, 'Tie': 0, 'Undecided': 0}, 'terran': {'Win': 107, 'Loss': 36, 'Tie': 1, 'Undecided': 0}}
 
-map = {'CactusValleyLE.SC2Map': {'Win': 1, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'BelShirVestigeLE.SC2Map': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 'ProximaStationLE.SC2Map': {'Win': 0, 'Loss': 0, 'Tie': 0, 'Undecided': 0}}
+map = {'CactusValleyLE.SC2Map': {'Win': 93, 'Loss': 51, 'Tie': 0, 'Undecided': 0}, 'BelShirVestigeLE.SC2Map': {'Win': 115, 'Loss': 28, 'Tie': 1, 'Undecided': 0}, 'ProximaStationLE.SC2Map': {'Win': 84, 'Loss': 60, 'Tie': 0, 'Undecided': 0}}
 
-difficulty = {'Hard': {'Win': 1, 'Loss': 0, 'Tie': 0, 'Undecided': 0}}
+difficulty = {'Hard': {'Win': 131, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 'HardVeryHard': {'Win': 98, 'Loss': 45, 'Tie': 1, 'Undecided': 0}, 'VeryHard': {'Win': 63, 'Loss': 81, 'Tie': 0, 'Undecided': 0}}
 
 bad_results = []
 
