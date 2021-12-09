@@ -7,15 +7,14 @@
 # ./getStats.py
 
 import subprocess
-# commented out libraries for group testing
-# import matplotlib.pyplot as plt
-# from matplotlib.ticker import MaxNLocator
-# import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+import numpy as np
 
 # all possible settings
 MAPS = ["CactusValleyLE.SC2Map", "BelShirVestigeLE.SC2Map", "ProximaStationLE.SC2Map"]
 RACES = ["zerg" , "protoss", "terran"]
-DIFFICULTIES = ["VeryHard"] #["VeryEasy", "Easy", "Medium", "MediumHard", "Hard", "HardVeryHard", "VeryHard"] # "CheatVision", "CheatMoney", "CheatInsane"]
+DIFFICULTIES = ["Hard", "HardVeryHard", "VeryHard"] #["VeryEasy", "Easy", "Medium", "MediumHard", "Hard", "HardVeryHard", "VeryHard"] # "CheatVision", "CheatMoney", "CheatInsane"]
 
 # global results hash
 global_results = {"Win":0, "Loss":0, "Tie":0, "Undecided":0}
@@ -77,7 +76,10 @@ def getSpecificResults():
 
     # array of specific runs you want to run
     runs = [
-        [ "VeryEasy", "zerg",  "BelShirVestigeLE.SC2Map"]
+        ["VeryHard", "protoss", "BelShirVestigeLE.SC2Map"],
+        ["VeryHard",  "terran", "BelShirVestigeLE.SC2Map"],
+        ['VeryHard', "zerg", "ProximaStationLE.SC2Map"],
+        ["HardVeryHard", "terran", "ProximaStationLE.SC2Map"]
     ]
 
     # run desired simulations only
@@ -119,6 +121,7 @@ def parseOutput(stdout):
     print(f"Result = {result}")
     return result
 
+# generate graphs
 def getGraphs(glob, race, map, difficulty, bad_results):
 
     # print to stdout
@@ -152,76 +155,60 @@ def getGraphs(glob, race, map, difficulty, bad_results):
     file.write('\n')
     file.close() 
 
-    # commented out for group testing, will uncomment later
-    # # prepare data
-    # for key in map:
-    #     map[key.replace('.SC2Map', '')] = map.pop(key)
+    #commented out for group testing, will uncomment later
+    # prepare data
+    for key in map:
+        map[key.replace('.SC2Map', '')] = map.pop(key)
 
-    # categorical_results = {"Race": race, "Map":map, "Difficulty": difficulty}
+    categorical_results = {"Race": race, "Map":map, "Difficulty": difficulty}
 
-    # for name, results in categorical_results.items():
+    for name, results in categorical_results.items():
     
-    #     categories = list(results.keys())
-    #     wins = []
-    #     losses = []
-    #     for category in categories:
-    #         wins.append(results[category]['Win'])
-    #         losses.append(results[category]['Loss'])
+        categories = list(results.keys())
+        wins = []
+        losses = []
+        for category in categories:
+            wins.append(results[category]['Win'])
+            losses.append(results[category]['Loss'])
         
-    #     # the label locations
-    #     x = np.arange(len(categories))  
+        # the label locations
+        x = np.arange(len(categories))  
         
-    #     # the width of the bars
-    #     width = 0.35  
+        # the width of the bars
+        width = 0.35  
 
-    #     # clear plot
-    #     plt.clf()
-    #     fig, ax = plt.subplots()
-    #     rects1 = ax.bar(x - width/2, wins, width, label='Wins')
-    #     rects2 = ax.bar(x + width/2, losses, width, label='Losses')
+        # clear plot
+        plt.clf()
+        fig, ax = plt.subplots()
+        rects1 = ax.bar(x - width/2, wins, width, label='Wins')
+        rects2 = ax.bar(x + width/2, losses, width, label='Losses')
 
-    #     # Add some text for labels, title and custom x-axis tick labels, etc.
-    #     ax.set_ylabel('Quantity')
-    #     ax.set_xlabel(name)
-    #     ax.legend(loc='upper right')
-    #     ax.set_xticks(x, categories)
+        # Add some text for labels, title and custom x-axis tick labels, etc.
+        ax.set_ylabel('Quantity')
+        ax.set_xlabel(name)
+        ax.legend(loc='upper right')
+        ax.set_xticks(x, categories)
 
-    #     ax.bar_label(rects1, padding=1)
-    #     ax.bar_label(rects2, padding=1)
-    #     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.bar_label(rects1, padding=1)
+        ax.bar_label(rects2, padding=1)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-    #     fig.tight_layout()
+        fig.tight_layout()
         
-    #     if name == "Difficulty":
-    #         plt.xticks(rotation=45)
+        if name == "Difficulty":
+            plt.xticks(rotation=45)
 
-    #     plt.savefig(f'output/{name}.png', bbox_inches='tight')
+        plt.savefig(f'output/{name}.png', bbox_inches='tight')
 
 def generateGraphs():
     #current results
-    glob = {'Win': 57, 'Loss': 6, 'Tie': 0, 'Undecided': 0}
+    glob = {'Win': 292, 'Loss': 139, 'Tie': 1, 'Undecided': 0}
 
-    race = {
-        'zerg': {'Win': 18, 'Loss': 3, 'Tie': 0, 'Undecided': 0}, 
-        'protoss': {'Win': 19, 'Loss': 2, 'Tie': 0, 'Undecided': 0}, 
-        'terran': {'Win': 20, 'Loss': 1, 'Tie': 0, 'Undecided': 0}
-    }
+    race = {'zerg': {'Win': 87, 'Loss': 57, 'Tie': 0, 'Undecided': 0}, 'protoss': {'Win': 98, 'Loss': 46, 'Tie': 0, 'Undecided': 0}, 'terran': {'Win': 107, 'Loss': 36, 'Tie': 1, 'Undecided': 0}}
 
-    map = {
-        'CactusValleyLE.SC2Map': {'Win': 19, 'Loss': 2, 'Tie': 0, 'Undecided': 0}, 
-        'BelShirVestigeLE.SC2Map': {'Win': 20, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
-        'ProximaStationLE.SC2Map': {'Win': 18, 'Loss': 3, 'Tie': 0, 'Undecided': 0}
-    }
+    map = {'CactusValleyLE.SC2Map': {'Win': 93, 'Loss': 51, 'Tie': 0, 'Undecided': 0}, 'BelShirVestigeLE.SC2Map': {'Win': 115, 'Loss': 28, 'Tie': 1, 'Undecided': 0}, 'ProximaStationLE.SC2Map': {'Win': 84, 'Loss': 60, 'Tie': 0, 'Undecided': 0}} 
 
-    difficulty = {
-        'VeryEasy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
-        'Easy': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
-        'Medium': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
-        'MediumHard': {'Win': 9, 'Loss': 0, 'Tie': 0, 'Undecided': 0}, 
-        'Hard': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
-        'HardVeryHard': {'Win': 8, 'Loss': 1, 'Tie': 0, 'Undecided': 0}, 
-        'VeryHard': {'Win': 5, 'Loss': 4, 'Tie': 0, 'Undecided': 0}
-    }
+    difficulty = {'Hard': {'Win': 131, 'Loss': 13, 'Tie': 0, 'Undecided': 0}, 'HardVeryHard': {'Win': 98, 'Loss': 45, 'Tie': 1, 'Undecided': 0}, 'VeryHard': {'Win': 63, 'Loss': 81, 'Tie': 0, 'Undecided': 0}}
 
     getGraphs(glob, race, map, difficulty, [])
     
@@ -230,18 +217,7 @@ if __name__ == "__main__":
     for difficulty in DIFFICULTIES:
         difficulty_results[difficulty] = {"Win":0, "Loss":0, "Tie":0, "Undecided":0}
 
-    # NOTES
-    # different functions you can run 
-    # to make sure things are working properly, run testRun() and then generateGraph() to make sure no errors are thrown
-    runSimulations()
+    # runSimulations()
     # testRun()
     # generateGraphs()
     # getSpecificResults()
-
-
-# TODO
-# - run all combinations (all difficulties, all maps, all enemy races)
-# have log which indicates who won
-# parse output to determine who won
-# determine what the stats will be tweaking
-# have CLI arguments for these things
